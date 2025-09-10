@@ -1,6 +1,15 @@
 import Card from "./Card";
 import './../styles/Board.css'
-import { easyBoard, mediumBoard, hardBoard } from './../assets/boards';
+// możemy zakomentować, bo board pozyskujemy z App.tsx
+// import { easyBoard, mediumBoard, hardBoard } from './../assets/boards';
+
+// dodajemy interfejs na takiej samej zasadzie jak w Card.tsx
+interface BoardProps {
+  cards: string[];
+//   znacznik | jest znacznikiem OR
+  level: "easy" | "medium" | "hard";
+}
+
 
 // funkcja tasowania tablicy - zmiana aby nie była posortowana
 function shuffleArray(array: string[]) {
@@ -16,12 +25,12 @@ function shuffleArray(array: string[]) {
     return newArray;
 }
 
-function Board() {
+function Board({ cards, level }: BoardProps) {
     // Wywołanie funkcji shuffleArray i przypisanie wyniku do stałej shuffledCards
-    const shuffledCards = shuffleArray(mediumBoard);
+    const shuffledCards = shuffleArray(cards);
 
     return (
-        <div className="board">
+        <div className={`board ${level}`}>
             {/* Tworzenie 'mapy', czyli "bierz każdy element tablicy i przetwórz go na coś nowego"*/}
             {shuffledCards.map((card, index) => (
                 // index jest każdą kolejną iteracją tablicy - React potrzebuje rozróżnienia pomiędzy kolejnymi elementami, dlatego w komponencie Card umiesczamy klucz=index
