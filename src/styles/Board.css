@@ -1,7 +1,7 @@
 .board {
   display: grid;
   justify-content: center;
-  background-color: red;
+  background-color: lightcoral;
   grid-template-columns: repeat(4, var(--card-size));
   gap: var(--gap);
 }
