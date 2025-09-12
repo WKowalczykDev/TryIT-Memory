@@ -1,42 +1,80 @@
 import Card from "./Card";
 import './../styles/Board.css'
-// możemy zakomentować, bo board pozyskujemy z App.tsx
-// import { easyBoard, mediumBoard, hardBoard } from './../assets/boards';
+import { useState } from "react";
 
 // dodajemy interfejs na takiej samej zasadzie jak w Card.tsx
 interface BoardProps {
-  cards: string[];
-//   znacznik | jest znacznikiem OR
-  level: "easy" | "medium" | "hard";
+    cards: string[];
+    level: "easy" | "medium" | "hard";
 }
 
-
-// funkcja tasowania tablicy - zmiana aby nie była posortowana
-function shuffleArray(array: string[]) {
-    const newArray = []; // nowa tablica, w której będziemy umieszczać potasowany układ
-    const copy = [...array]; // kopiujemy oryginalną tablicę
-
-    while (copy.length > 0) {
-        const index = Math.floor(Math.random() * copy.length); // losowy indeks - Math.random() wybiera losową liczbę od 0 do 1, Math.floor przybliża do najbliższej liczby całkowitej; copy.length to długość tablicy, którą tasujemy
-        newArray.push(copy[index]); // dodajemy element do nowej tablicy
-        copy.splice(index, 1); // usuwamy element z kopii zmniejszając jej wielkość - przechodzimy na początek pętli while
-    }
-
-    return newArray;
+interface FlippedCard {
+    index: number;
+    value: string;
 }
 
 function Board({ cards, level }: BoardProps) {
-    // Wywołanie funkcji shuffleArray i przypisanie wyniku do stałej shuffledCards
-    const shuffledCards = shuffleArray(cards);
+
+    // stan przechowujący odwrócone karty - tablica obiektów FlippedCard
+    const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
+    // stan przechowujący tymczasowo odwrócone karty - tablica obiektów FlippedCard
+    const [flippedCards, setFlippedCards] = useState<FlippedCard[]>([]);
+    // stan blokujący możliwość klikania w karty - przydaje się gdy dwie karty są odwrócone i czekamy aż się odwrócą z powrotem
+    const [disabled, setDisabled] = useState(false);
+
+    // funkcja obsługująca kliknięcie w kartę
+    const handleCardClick = (index: number, value: string) => {
+        // jeżeli disabled jest true to nic nie robimy
+        if (disabled) return;
+        // jeżeli karta jest już w flippedCards lub pairCards to nic nie robimy
+        if (flippedCards.find(myCard => myCard.index == index)||pairCards.find(myCard => myCard.index == index)) {
+            return;
+        }
+        // dodajemy klikniętą kartę do flippedCards
+        // tworzymy nową tablicę z poprzednimi odwróconymi kartami oraz z nową kartą
+        // dzięki temu React "zauważy" zmianę w stanie i przerysuje komponent
+        // nie możemy robić flippedCards.push() ponieważ wtedy zmieniamy bezpośrednio tablicę w useState i React tego nie zauważy
+        const newFlippedCards = [...flippedCards, { index, value }]
+        setFlippedCards(newFlippedCards)
+        if (flippedCards.length > 0) {
+            if (flippedCards[0].value === value) {
+                // gdy karty się zgadzają dodajemy do useState pairCards, żeby mieć miejce gdzie będziemy przechowywać stale odkryte karty
+                // dodajemy do pary pierwszą kartę z flippedCards oraz drugą kartę, którą właśnie kliknęliśmy
+                setPairCards([...pairCards, flippedCards[0], { index, value }]);
+                setFlippedCards([]);
+            }
+            else {
+                // co zrobić gdy karty się nie zgadzają
+                setDisabled(true); // blokujemy możliwość klikania w karty za pomocą stanu disabled w useState
+                // po 0.4 sekundy odkrywamy karty z powrotem
+                setTimeout(() => {
+                    // czyscimy flippedCards - aby karty się odwróciły z powrotem
+                    setFlippedCards([]);
+                    // odblokowujemy możliwość klikania w karty
+                    setDisabled(false);
+                }, 400);
+            }
+            return
+        }
+    };
 
     return (
         <div className={`board ${level}`}>
             {/* Tworzenie 'mapy', czyli "bierz każdy element tablicy i przetwórz go na coś nowego"*/}
-            {shuffledCards.map((card, index) => (
+            {cards.map((card, index) => (
                 // index jest każdą kolejną iteracją tablicy - React potrzebuje rozróżnienia pomiędzy kolejnymi elementami, dlatego w komponencie Card umiesczamy klucz=index
                 // card jest właśnie wartością, która znajduje się w tablicy boards.ts
                 // dla ciekawskich: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map
-                <Card key={index} value={card} />
+                <Card
+                    key={index}
+                    value={card}
+                    // sprawdzamy czy index karty znajduje się w tablicy flippedCards lub pairCards - jeśli tak to znaczy, że karta jest odwrócona
+                    // find zwraca pierwszy znaleziony element lub undefined jeśli nic nie znajdzie - dlatego sprawdzamy czy wynik jest prawdziwy (czyli karta jest odwrócona) i wtedy przekazujemy true do propsa flipped
+                    flipped={(flippedCards.find((flippedCard) => flippedCard.index === index) ||
+                        pairCards.find((pairCard) => pairCard.index === index)) ? true : false}
+                    // przekazujemy funkcję handleCardClick do propsa myOnClick - dzięki temu w komponencie Card możemy wywołać tę funkcję
+                    myOnClick={() => handleCardClick(index, card)}
+                />
             ))}
         </div>
     );
