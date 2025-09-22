@@ -27,6 +27,9 @@ function App() {
   // stan przechowujący potasowane karty - defaultowo potasowane easyBoard
   const [shuffledCards, setShuffledCards] = useState<string[]>(shuffleArray(easyBoard));
 
+  //ustawinie flagi blokującej selecta, aby nie dało się zmienić poziomu gry po odkryciu pierwszej karty
+  const [isSelectDisabled, setIsSelectDisabled] = useState<boolean>(false);
+
   // wybieramy odpowiednią tablicę z listy i zapisujemy ją do zmiennej currentBoard, która później tworzy na jej podstawie <Board>
   const getBoard = (level: "easy" | "medium" | "hard") => {
     let currentBoard;
@@ -51,19 +54,30 @@ function App() {
     setLevel(e.target.value as "easy" | "medium" | "hard");
   };
 
+  //ustawienie atrybutu disabled w select - jeżeli isSelectDisabled jest true to select jest zablokowany
+  //jeżeli false to select jest odblokowany
+  // Ustawiamy atrybut disabled w useEffect, aby uniknąć błędów kompilacji
+  useEffect(() => {
+    // pobieramy element select po id i nadajemy mu typ HTMLSelectElement lub null (jeżeli nie znajdzie elementu)
+    const select = document.getElementById("levelChangeSelect") as HTMLSelectElement | null;
+    if (select) {
+      select.disabled = isSelectDisabled;
+    }
+  }, [isSelectDisabled]);
+
   return (
     <div className="app">
       <div className="controls">
         <label>
           Wybierz poziom:
-          <select value={level} onChange={handleChange}>
+          <select id='levelChangeSelect' value={level} onChange={handleChange}>
             <option value="easy">Łatwy</option>
             <option value="medium">Średni</option>
             <option value="hard">Trudny</option>
           </select>
         </label>
       </div>
-      <Board cards={shuffledCards} level={level} />
+      <Board cards={shuffledCards} level={level} selectDisabled={setIsSelectDisabled} />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { useState } from "react";
 interface BoardProps {
     cards: string[];
     level: "easy" | "medium" | "hard";
+    selectDisabled: (value: boolean) => void;
 }
 
 interface FlippedCard {
@@ -13,7 +14,7 @@ interface FlippedCard {
     value: string;
 }
 
-function Board({ cards, level }: BoardProps) {
+function Board({ cards, level, selectDisabled }: BoardProps) {
 
     // stan przechowujący odwrócone karty - tablica obiektów FlippedCard
     const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
@@ -36,6 +37,9 @@ function Board({ cards, level }: BoardProps) {
         // nie możemy robić flippedCards.push() ponieważ wtedy zmieniamy bezpośrednio tablicę w useState i React tego nie zauważy
         const newFlippedCards = [...flippedCards, { index, value }]
         setFlippedCards(newFlippedCards)
+        
+        selectDisabled(true); // blokujemy możliwość zmiany poziomu gry po odkryciu pierwszej karty
+
         if (flippedCards.length > 0) {
             if (flippedCards[0].value === value) {
                 // gdy karty się zgadzają dodajemy do useState pairCards, żeby mieć miejce gdzie będziemy przechowywać stale odkryte karty
