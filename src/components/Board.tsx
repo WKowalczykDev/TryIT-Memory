@@ -1,6 +1,6 @@
 import Card from "./Card";
 import './../styles/Board.css'
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // dodajemy interfejs na takiej samej zasadzie jak w Card.tsx
 interface BoardProps {
@@ -23,12 +23,27 @@ function Board({ cards, level, selectDisabled }: BoardProps) {
     // stan blokujący możliwość klikania w karty - przydaje się gdy dwie karty są odwrócone i czekamy aż się odwrócą z powrotem
     const [disabled, setDisabled] = useState(false);
 
+    useEffect(() => {
+        // jeżeli długość pairCards jest równa długości cards to znaczy, że wszystkie karty zostały odkryte
+        if (pairCards.length === cards.length) {
+            alert("Gratulacje! Rozwiązałaś zagadkę!");
+            // blokujemy możliwość zmiany poziomu i zostawiamy odwrócone karty na 5 sekund
+            setTimeout(() => {
+                // czyścimy stan flippedCards i pairCards po 5 sekundach
+                setFlippedCards([]);
+                setPairCards([]);
+                // odblokowujemy możliwość zmiany poziomu gry
+                selectDisabled(false);
+            }, 5000);
+        }
+    }, [pairCards]);
+
     // funkcja obsługująca kliknięcie w kartę
     const handleCardClick = (index: number, value: string) => {
         // jeżeli disabled jest true to nic nie robimy
         if (disabled) return;
         // jeżeli karta jest już w flippedCards lub pairCards to nic nie robimy
-        if (flippedCards.find(myCard => myCard.index == index)||pairCards.find(myCard => myCard.index == index)) {
+        if (flippedCards.find(myCard => myCard.index == index) || pairCards.find(myCard => myCard.index == index)) {
             return;
         }
         // dodajemy klikniętą kartę do flippedCards
@@ -37,7 +52,7 @@ function Board({ cards, level, selectDisabled }: BoardProps) {
         // nie możemy robić flippedCards.push() ponieważ wtedy zmieniamy bezpośrednio tablicę w useState i React tego nie zauważy
         const newFlippedCards = [...flippedCards, { index, value }]
         setFlippedCards(newFlippedCards)
-        
+
         selectDisabled(true); // blokujemy możliwość zmiany poziomu gry po odkryciu pierwszej karty
 
         if (flippedCards.length > 0) {
