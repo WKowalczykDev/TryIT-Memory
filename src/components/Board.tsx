@@ -7,6 +7,7 @@ interface BoardProps {
     cards: string[];
     level: "easy" | "medium" | "hard";
     selectDisabled: (value: boolean) => void;
+    gameState: boolean;
 }
 
 interface FlippedCard {
@@ -14,7 +15,7 @@ interface FlippedCard {
     value: string;
 }
 
-function Board({ cards, level, selectDisabled }: BoardProps) {
+function Board({ cards, level, selectDisabled, gameState }: BoardProps) {
 
     // stan przechowujący odwrócone karty - tablica obiektów FlippedCard
     const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
@@ -37,6 +38,15 @@ function Board({ cards, level, selectDisabled }: BoardProps) {
             }, 5000);
         }
     }, [pairCards]);
+
+    // jeżeli gameState (czyli isSelectDisabled z App.tsx) zmieni się na false (czyli odblokujemy możliwość zmiany poziomu gry) to czyścimy stany flippedCards i pairCards oraz odblokowujemy możliwość klikania w karty
+    useEffect(() => {
+        if (!gameState) {
+            setFlippedCards([]);
+            setPairCards([]);
+            setDisabled(false);
+        }
+    }, [gameState]);
 
     // funkcja obsługująca kliknięcie w kartę
     const handleCardClick = (index: number, value: string) => {

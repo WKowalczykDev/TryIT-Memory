@@ -77,7 +77,13 @@ function App() {
           </select>
         </label>
       </div>
-      <Board cards={shuffledCards} level={level} selectDisabled={setIsSelectDisabled} />
+      <Board cards={shuffledCards} level={level} selectDisabled={setIsSelectDisabled} gameState={isSelectDisabled} />
+      <div className='restart'>
+        <button onClick={() => {
+          setShuffledCards(shuffleArray(getBoard(level)));
+          setIsSelectDisabled(false);
+        }}>Restart</button>
+      </div>
     </div>
   );
 }
