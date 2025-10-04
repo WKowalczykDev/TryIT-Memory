@@ -30,6 +30,8 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
     const [timer, setTimer] = useState(0);
     // stan przechowujący informację czy licznik czasu jest aktywny
     const [isTimerActive, setIsTimerActive] = useState(false);
+    // stan przechowujący liczbę kroków
+    const [steps, setSteps] = useState(0);
 
 
     useEffect(() => {
@@ -56,6 +58,7 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
             setPairCards([]);
             setDisabled(false);
             setTimer(0); // resetujemy licznik czasu
+            setSteps(0); // resetujemy liczbę kroków
         }
         //START GRY - start licznika czasu
         else {
@@ -98,7 +101,7 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
         // nie możemy robić flippedCards.push() ponieważ wtedy zmieniamy bezpośrednio tablicę w useState i React tego nie zauważy
         const newFlippedCards = [...flippedCards, { index, value }]
         setFlippedCards(newFlippedCards)
-
+        setSteps(steps + 1); // zwiększamy liczbę kroków o 1
         selectDisabled(true); // blokujemy możliwość zmiany poziomu gry po odkryciu pierwszej karty
 
         if (flippedCards.length > 0) {
@@ -125,7 +128,7 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
 
     return (
         <div className='game-container'>
-            <GameStats timer={timer} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} isSelectDisabled={isSelectDisabled} />
+            <GameStats timer={timer} steps={steps} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} isSelectDisabled={isSelectDisabled} />
             <div className={`board ${level}`}>
                 {/* Tworzenie 'mapy', czyli "bierz każdy element tablicy i przetwórz go na coś nowego"*/}
                 {cards.map((card, index) => (
