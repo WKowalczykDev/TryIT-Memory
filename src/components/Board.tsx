@@ -2,15 +2,17 @@ import Card from "./Card";
 import './../styles/Board.css'
 import { useEffect, useState } from "react";
 import GameStats from "./GameStats";
+import { CARD_FLIP_DURATION } from "../assets/constants";
 
 // dodajemy interfejs na takiej samej zasadzie jak w Card.tsx
 interface BoardProps {
     cards: string[];
     level: "easy" | "medium" | "hard";
     selectDisabled: (value: boolean) => void;
-    isSelectDisabled: boolean;
     gameState: boolean;
     setGameState: (value: boolean) => void;
+    resetTriggered: boolean;
+    setResetTriggered: (value: boolean) => void;
 }
 
 interface FlippedCard {
@@ -18,7 +20,7 @@ interface FlippedCard {
     value: string;
 }
 
-function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setGameState }: BoardProps) {
+function Board({ cards, level, selectDisabled, gameState, setGameState, resetTriggered, setResetTriggered }: BoardProps) {
 
     // stan przechowujący odwrócone karty - tablica obiektów FlippedCard
     const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
@@ -38,12 +40,8 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
         // jeżeli długość pairCards jest równa długości cards to znaczy, że wszystkie karty zostały odkryte
         // KONIEC GRY
         if (pairCards.length === cards.length) {
-
             setIsTimerActive(false); // zatrzymujemy licznik czasu
-            // alert("Gratulacje! Rozwiązałaś zagadkę!");
-            // odblokowujemy możliwość zmiany poziomu gry
-            selectDisabled(false);
-
+            setGameState(false); // ustawiamy stan gry na false - gra zakończona
         }
     }, [pairCards]);
 
@@ -53,12 +51,15 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
         // zmienna do przechowywania ID interwału
         let interval: number | undefined;
         //KONIEC GRY - reset, po odblokowaniu możliwości zmiany poziomu gry
-        if (!gameState) {
+        if (resetTriggered) {
             setFlippedCards([]);
             setPairCards([]);
             setDisabled(false);
             setTimer(0); // resetujemy licznik czasu
             setSteps(0); // resetujemy liczbę kroków
+            selectDisabled(false); // odblokowujemy możliwość zmiany poziomu gry
+            setResetTriggered(false); // resetujemy flagę resetTriggered w App.tsx
+            setIsTimerActive(false); // zatrzymujemy licznik czasu
         }
         //START GRY - start licznika czasu
         else {
@@ -70,12 +71,13 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
             }
         }
         // funkcja sprzątająca - wywoływana przy odmontowaniu komponentu lub zmianie gameState lub isTimerActive
+        // cleanup działa tak, że najpierw wywołuje funkcję cleanup z poprzedniego renderu, a potem wykonuje kod w useEffect
         return () => {
             if (interval) {
                 clearInterval(interval);
             }
         };
-    }, [gameState, isTimerActive]);
+    }, [resetTriggered, isTimerActive]);
 
     // funkcja obsługująca kliknięcie w kartę
     const handleCardClick = (index: number, value: string) => {
@@ -120,7 +122,7 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
                     setFlippedCards([]);
                     // odblokowujemy możliwość klikania w karty
                     setDisabled(false);
-                }, 400);
+                }, CARD_FLIP_DURATION);
             }
             return
         }
@@ -128,7 +130,7 @@ function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setG
 
     return (
         <div className='game-container'>
-            <GameStats timer={timer} steps={steps} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} isSelectDisabled={isSelectDisabled} />
+            <GameStats timer={timer} steps={steps} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} gameState={gameState} />
             <div className={`board ${level}`}>
                 {/* Tworzenie 'mapy', czyli "bierz każdy element tablicy i przetwórz go na coś nowego"*/}
                 {cards.map((card, index) => (

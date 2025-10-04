@@ -5,16 +5,17 @@ interface GameStatsProps {
     steps:number;
     pairsFound: number;
     totalPairs: number;
-    isSelectDisabled: boolean;
+    gameState: boolean;
 }
 
-const GameStats: React.FC<GameStatsProps> = ({ timer, steps, pairsFound, totalPairs, isSelectDisabled }) => {
+const GameStats: React.FC<GameStatsProps> = ({ timer, steps, pairsFound, totalPairs, gameState }) => {
     return (
         <div className="game-stats">
             <div>Czas: {timer}s</div>
             <div>Kroki: {steps}</div>
             <div>Pary: {pairsFound} / {totalPairs}</div>
-            {isSelectDisabled ? <div>Gra w toku...</div> : <div>Gra zakończona!</div>}
+            {gameState ? <div>Gra w toku...</div> : <div>Gra zakończona!</div>}
+            <div><p>wyczyść planszę aby odblokować możliwość zmiany poziomu gry</p></div>
         </div>
     );
 };
