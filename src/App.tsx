@@ -30,6 +30,9 @@ function App() {
   //ustawinie flagi blokującej selecta, aby nie dało się zmienić poziomu gry po odkryciu pierwszej karty
   const [isSelectDisabled, setIsSelectDisabled] = useState<boolean>(false);
 
+  // stan przechowujący informację o stanie gry - czy gra jest w toku czy zakończona
+  const [gameState, setGameState] = useState(false); // true - gra w toku, false - gra zakończona
+
   // wybieramy odpowiednią tablicę z listy i zapisujemy ją do zmiennej currentBoard, która później tworzy na jej podstawie <Board>
   const getBoard = (level: "easy" | "medium" | "hard") => {
     let currentBoard;
@@ -77,9 +80,10 @@ function App() {
           </select>
         </label>
       </div>
-      <Board cards={shuffledCards} level={level} selectDisabled={setIsSelectDisabled} gameState={isSelectDisabled} />
+      <Board cards={shuffledCards} level={level} selectDisabled={setIsSelectDisabled} isSelectDisabled={isSelectDisabled} gameState={gameState} setGameState={setGameState} />
       <div className='restart'>
         <button onClick={() => {
+          setGameState(false);
           setShuffledCards(shuffleArray(getBoard(level)));
           setIsSelectDisabled(false);
         }}>Restart</button>

@@ -15,3 +15,9 @@
 .board.hard {
   grid-template-columns: repeat(6, var(--card-size));
 }
+.game-container{
+  display:grid;
+  grid-template-columns: 1fr 2fr 1fr; /* trzy kolumny: lewa, środek, prawa, fr(fractional unit) - określa proporcje kolumn */
+  gap: 20px;
+  align-items: start;
+}

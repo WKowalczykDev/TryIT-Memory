@@ -1,13 +1,16 @@
 import Card from "./Card";
 import './../styles/Board.css'
 import { useEffect, useState } from "react";
+import GameStats from "./GameStats";
 
 // dodajemy interfejs na takiej samej zasadzie jak w Card.tsx
 interface BoardProps {
     cards: string[];
     level: "easy" | "medium" | "hard";
     selectDisabled: (value: boolean) => void;
+    isSelectDisabled: boolean;
     gameState: boolean;
+    setGameState: (value: boolean) => void;
 }
 
 interface FlippedCard {
@@ -15,7 +18,7 @@ interface FlippedCard {
     value: string;
 }
 
-function Board({ cards, level, selectDisabled, gameState }: BoardProps) {
+function Board({ cards, level, selectDisabled, isSelectDisabled, gameState, setGameState }: BoardProps) {
 
     // stan przechowujący odwrócone karty - tablica obiektów FlippedCard
     const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
@@ -23,30 +26,53 @@ function Board({ cards, level, selectDisabled, gameState }: BoardProps) {
     const [flippedCards, setFlippedCards] = useState<FlippedCard[]>([]);
     // stan blokujący możliwość klikania w karty - przydaje się gdy dwie karty są odwrócone i czekamy aż się odwrócą z powrotem
     const [disabled, setDisabled] = useState(false);
+    // stan przechowujący czas gry
+    const [timer, setTimer] = useState(0);
+    // stan przechowujący informację czy licznik czasu jest aktywny
+    const [isTimerActive, setIsTimerActive] = useState(false);
+
 
     useEffect(() => {
         // jeżeli długość pairCards jest równa długości cards to znaczy, że wszystkie karty zostały odkryte
+        // KONIEC GRY
         if (pairCards.length === cards.length) {
-            alert("Gratulacje! Rozwiązałaś zagadkę!");
-            // blokujemy możliwość zmiany poziomu i zostawiamy odwrócone karty na 5 sekund
-            setTimeout(() => {
-                // czyścimy stan flippedCards i pairCards po 5 sekundach
-                setFlippedCards([]);
-                setPairCards([]);
-                // odblokowujemy możliwość zmiany poziomu gry
-                selectDisabled(false);
-            }, 5000);
+
+            setIsTimerActive(false); // zatrzymujemy licznik czasu
+            // alert("Gratulacje! Rozwiązałaś zagadkę!");
+            // odblokowujemy możliwość zmiany poziomu gry
+            selectDisabled(false);
+
         }
     }, [pairCards]);
 
     // jeżeli gameState (czyli isSelectDisabled z App.tsx) zmieni się na false (czyli odblokujemy możliwość zmiany poziomu gry) to czyścimy stany flippedCards i pairCards oraz odblokowujemy możliwość klikania w karty
+
     useEffect(() => {
+        // zmienna do przechowywania ID interwału
+        let interval: number | undefined;
+        //KONIEC GRY - reset, po odblokowaniu możliwości zmiany poziomu gry
         if (!gameState) {
             setFlippedCards([]);
             setPairCards([]);
             setDisabled(false);
+            setTimer(0); // resetujemy licznik czasu
         }
-    }, [gameState]);
+        //START GRY - start licznika czasu
+        else {
+            //co 100ms update'ujemy stan licznika o 100ms
+            if (isTimerActive) {
+                interval = setInterval(() => {
+                    setTimer((prevTimer) => Number((prevTimer + 0.1).toFixed(1)));
+                }, 100);
+            }
+        }
+        // funkcja sprzątająca - wywoływana przy odmontowaniu komponentu lub zmianie gameState lub isTimerActive
+        return () => {
+            if (interval) {
+                clearInterval(interval);
+            }
+        };
+    }, [gameState, isTimerActive]);
 
     // funkcja obsługująca kliknięcie w kartę
     const handleCardClick = (index: number, value: string) => {
@@ -56,6 +82,16 @@ function Board({ cards, level, selectDisabled, gameState }: BoardProps) {
         if (flippedCards.find(myCard => myCard.index == index) || pairCards.find(myCard => myCard.index == index)) {
             return;
         }
+        // URUCHAMIAMY TIMER PRZY PIERWSZYM KLIKNIĘCIU
+        if (!isTimerActive) {
+            setTimer(0);
+            setIsTimerActive(true);
+        }
+
+        if (!gameState) {
+            setGameState(true); // ustawiamy stan gry na true - gra w toku
+        }
+
         // dodajemy klikniętą kartę do flippedCards
         // tworzymy nową tablicę z poprzednimi odwróconymi kartami oraz z nową kartą
         // dzięki temu React "zauważy" zmianę w stanie i przerysuje komponent
@@ -88,23 +124,29 @@ function Board({ cards, level, selectDisabled, gameState }: BoardProps) {
     };
 
     return (
-        <div className={`board ${level}`}>
-            {/* Tworzenie 'mapy', czyli "bierz każdy element tablicy i przetwórz go na coś nowego"*/}
-            {cards.map((card, index) => (
-                // index jest każdą kolejną iteracją tablicy - React potrzebuje rozróżnienia pomiędzy kolejnymi elementami, dlatego w komponencie Card umiesczamy klucz=index
-                // card jest właśnie wartością, która znajduje się w tablicy boards.ts
-                // dla ciekawskich: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map
-                <Card
-                    key={index}
-                    value={card}
-                    // sprawdzamy czy index karty znajduje się w tablicy flippedCards lub pairCards - jeśli tak to znaczy, że karta jest odwrócona
-                    // find zwraca pierwszy znaleziony element lub undefined jeśli nic nie znajdzie - dlatego sprawdzamy czy wynik jest prawdziwy (czyli karta jest odwrócona) i wtedy przekazujemy true do propsa flipped
-                    flipped={(flippedCards.find((flippedCard) => flippedCard.index === index) ||
-                        pairCards.find((pairCard) => pairCard.index === index)) ? true : false}
-                    // przekazujemy funkcję handleCardClick do propsa myOnClick - dzięki temu w komponencie Card możemy wywołać tę funkcję
-                    myOnClick={() => handleCardClick(index, card)}
-                />
-            ))}
+        <div className='game-container'>
+            <GameStats timer={timer} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} isSelectDisabled={isSelectDisabled} />
+            <div className={`board ${level}`}>
+                {/* Tworzenie 'mapy', czyli "bierz każdy element tablicy i przetwórz go na coś nowego"*/}
+                {cards.map((card, index) => (
+                    // index jest każdą kolejną iteracją tablicy - React potrzebuje rozróżnienia pomiędzy kolejnymi elementami, dlatego w komponencie Card umiesczamy klucz=index
+                    // card jest właśnie wartością, która znajduje się w tablicy boards.ts
+                    // dla ciekawskich: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map
+                    <Card
+                        key={index}
+                        value={card}
+                        // sprawdzamy czy index karty znajduje się w tablicy flippedCards lub pairCards - jeśli tak to znaczy, że karta jest odwrócona
+                        // find zwraca pierwszy znaleziony element lub undefined jeśli nic nie znajdzie - dlatego sprawdzamy czy wynik jest prawdziwy (czyli karta jest odwrócona) i wtedy przekazujemy true do propsa flipped
+                        flipped={(flippedCards.find((flippedCard) => flippedCard.index === index) ||
+                            pairCards.find((pairCard) => pairCard.index === index)) ? true : false}
+                        // przekazujemy funkcję handleCardClick do propsa myOnClick - dzięki temu w komponencie Card możemy wywołać tę funkcję
+                        myOnClick={() => handleCardClick(index, card)}
+                    />
+                ))}
+            </div>
+            <div className='game-scores'>
+                <p>tutaj będą zapisywane wyniki za pomocą plików cookies (dla chętnych)</p>
+            </div>
         </div>
     );
 }
