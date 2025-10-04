@@ -2,6 +2,7 @@ import './App.css'
 import Board from "./components/Board";
 import { useEffect, useState } from "react";
 import { easyBoard, mediumBoard, hardBoard } from "./assets/boards";
+import { CARD_FLIP_DURATION } from './assets/constants';
 
 
 // funkcja tasowania tablicy - zmiana aby nie była posortowana
@@ -32,6 +33,9 @@ function App() {
 
   // stan przechowujący informację o stanie gry - czy gra jest w toku czy zakończona
   const [gameState, setGameState] = useState(false); // true - gra w toku, false - gra zakończona
+
+  // stan przechowujący informację czy reset został wywołany
+  const [resetTriggered, setResetTriggered] = useState(false);
 
   // wybieramy odpowiednią tablicę z listy i zapisujemy ją do zmiennej currentBoard, która później tworzy na jej podstawie <Board>
   const getBoard = (level: "easy" | "medium" | "hard") => {
@@ -80,13 +84,15 @@ function App() {
           </select>
         </label>
       </div>
-      <Board cards={shuffledCards} level={level} selectDisabled={setIsSelectDisabled} isSelectDisabled={isSelectDisabled} gameState={gameState} setGameState={setGameState} />
+      <Board cards={shuffledCards} level={level} selectDisabled={setIsSelectDisabled} gameState={gameState} setGameState={setGameState} resetTriggered={resetTriggered} setResetTriggered={setResetTriggered} />
       <div className='restart'>
         <button onClick={() => {
-          setGameState(false);
-          setShuffledCards(shuffleArray(getBoard(level)));
+          setResetTriggered(true);
           setIsSelectDisabled(false);
-        }}>Restart</button>
+          setTimeout(() => {
+            setShuffledCards(shuffleArray(getBoard(level)));
+          }, CARD_FLIP_DURATION);
+        }}>Wyczyść planszę</button>
       </div>
     </div>
   );
