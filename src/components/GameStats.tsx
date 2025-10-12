@@ -1,4 +1,5 @@
 import React from 'react';
+import '../styles/GameStats.css';
 
 interface GameStatsProps {
     timer: number;

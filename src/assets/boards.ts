@@ -1,6 +1,6 @@
 export const easyBoard = [
   'A','A','B','B','C','C','D','D',
-  'E','E','F','F','G','G','H','H'
+  // 'E','E','F','F','G','G','H','H'
 ];
 export const mediumBoard = [
   'A','A','B','B','C','C','D','D','E','E','F','F',
