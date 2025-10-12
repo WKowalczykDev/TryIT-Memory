@@ -44,10 +44,10 @@ function Card({ value, flipped, myOnClick }: CardProps) {
     'N': c.red,
     'O': c.green,
     'P': c.orange,
-    'R': c.red,
-    'S': c.green,
-    'T': c.red,
-    'U': c.green,
+    'Q': c.red,
+    'R': c.green,
+    'S': c.red,
+    'T': c.green,
   };
 
   useEffect(() => {
