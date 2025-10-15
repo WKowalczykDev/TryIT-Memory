@@ -3,6 +3,7 @@ import './../styles/Board.css'
 import { useEffect, useState } from "react";
 import GameStats from "./GameStats";
 import { CARD_FLIP_DURATION } from "../assets/constants";
+import GameCookies from "./GameCookies";
 
 // dodajemy interfejs na takiej samej zasadzie jak w Card.tsx
 interface BoardProps {
@@ -34,14 +35,18 @@ function Board({ cards, level, selectDisabled, gameState, setGameState, resetTri
     const [isTimerActive, setIsTimerActive] = useState(false);
     // stan przechowujący liczbę kroków
     const [steps, setSteps] = useState(0);
-
+    // stan przechowujący czy gra została wygrana, nie tylko zakończona - do przekazania do GameCookies
+    const [countGameWon, setCountGameWon] = useState(0);
 
     useEffect(() => {
         // jeżeli długość pairCards jest równa długości cards to znaczy, że wszystkie karty zostały odkryte
-        // KONIEC GRY
+        // KONIEC GRY - WYGRANA
         if (pairCards.length === cards.length) {
             setIsTimerActive(false); // zatrzymujemy licznik czasu
             setGameState(false); // ustawiamy stan gry na false - gra zakończona
+
+            //WYWOŁUJEMY FUNKCJĘ POZWALAJĄCĄ ZAPISAĆ WYNIK W PLIKACH COOKIES
+            setCountGameWon(countGameWon + 1); // zwiększamy licznik wygranych gier o 1
         }
     }, [pairCards]);
 
@@ -149,9 +154,7 @@ function Board({ cards, level, selectDisabled, gameState, setGameState, resetTri
                     />
                 ))}
             </div>
-            <div className='game-scores'>
-                <p>tutaj będą zapisywane wyniki za pomocą plików cookies (dla chętnych)</p>
-            </div>
+            <GameCookies gameWonCount={countGameWon} newGameDetector={gameState}/>
         </div>
     );
 }
