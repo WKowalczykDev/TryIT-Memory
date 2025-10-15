@@ -154,7 +154,7 @@ function Board({ cards, level, selectDisabled, gameState, setGameState, resetTri
                     />
                 ))}
             </div>
-            <GameCookies gameWonCount={countGameWon} newGameDetector={gameState}/>
+            <GameCookies gameWonCount={countGameWon} newGameDetector={gameState} timer={timer} steps={steps} level={level} />
         </div>
     );
 }
