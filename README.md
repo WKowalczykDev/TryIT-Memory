@@ -1,78 +1,77 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Podstawowa struktura aplikacji`
-W tym etapie tworzymy początkowy szkielet gry Memory w React.
+**Commit:** `Dodanie tablic z kartami i funkcji tasowania`
+
+W tym etapie dodajemy tablice z wartościami kart dla różnych poziomów trudności oraz implementujemy funkcję do losowego tasowania kart.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Aktualizacja `index.html`
+### 1. Utworzenie pliku `boards.ts`
 
-- Ustawiono język strony (`lang="pl"`) i kodowanie UTF-8 - chcemy aby program rozumiał znaki polskie.
-- Ustawiono favicon (`tryit.ico`). - ikonka w oknie strony w przeglądarce
-- Utworzono `<div id="root"></div>` — punkt montowania aplikacji React.
+- Dodano trzy tablice reprezentujące różne poziomy trudności:
+  - `easyBoard` – 16 kart (8 par) z literami A-H
+  - `mediumBoard` – 24 karty (12 par) z literami A-L
+  - `hardBoard` – 36 kart (18 par) z literami A-R
+- Każda litera pojawia się dwa razy, tworząc pary do odnalezienia w grze.
 
-### 2. Stylowanie globalne (`index.css` / `App.css`)
+### 2. Funkcja tasowania `shuffleArray` w `Board.tsx`
 
-- `#root` – centrowanie zawartości i wyśrodkowanie tekstu.
-- `.app` – główny kontener aplikacji jako grid, obramowanie w kolorze żółtym.
-- Zdefiniowano zmienne CSS (`:root`) dla kolorów, rozmiaru kart, odstępów, cieni i zaokrągleń.
-- Body – reset marginesów, ustawienie fontu i tła.
-- `.board` – plansza gry wyśrodkowana i wyróżniona czerwonym tłem.
-- `.card` – pojedyncza karta z rozmiarem, kursorem wskazującym możliwość kliknięcia i niebieskim, przerywanym obramowaniem.
+- Implementacja algorytmu tasowania tablicy:
+  - Tworzy pustą tablicę `newArray` na wynik
+  - Kopiuje oryginalną tablicę za pomocą spread operatora `[...array]`
+  - W pętli `while` losuje element z kopii, dodaje do nowej tablicy i usuwa z kopii
+  - Używa `Math.random()` i `Math.floor()` do losowania indeksów
+  - Zwraca potasowaną tablicę
+- Dzięki tej funkcji karty będą za każdym razem w losowej kolejności.
 
-### 3. Główny komponent `App.tsx`
+### 3. Aktualizacja komponentu `Board.tsx`
 
-- Import stylów `App.css`.
-- Import komponentu `Board`.
-- Renderowanie nagłówka `<h1>Gra Memory</h1>` i komponentu `<Board />`.
-- Kontener `.app` jako grid, przygotowany na późniejsze komponenty gry.
+- Import tablic z `boards.ts`: `easyBoard`, `mediumBoard`, `hardBoard`
+- Wywołanie `shuffleArray(mediumBoard)` i przypisanie wyniku do `shuffledCards`
+- Użycie metody `.map()` do renderowania kart:
+  - Iteracja przez tablicę `shuffledCards`
+  - Każda karta otrzymuje unikalny `key={index}` (wymagane przez React)
+  - Przekazanie wartości karty przez prop `value={card}`
 
-### 4. Komponent `Board.tsx`
+### 4. Aktualizacja komponentu `Card.tsx`
 
-- Import komponentu `Card` i stylów `Board.css`.
-- Renderowanie planszy gry z nagłówkiem `<h2>Plansza</h2>` i trzema przykładowymi kartami.
-- Kontener `.board` jako grid.
+- Dodanie interfejsu TypeScript `CardProps` z właściwością `value: string`
+- Komponent przyjmuje prop `value` i wyświetla go w divie
+- Określenie typu danej wejściowej do komponentu Card: `{value}: CardProps`
 
-### 5. Komponent `Card.tsx`
+### 5. Stylowanie w `Board.css`
 
-- Import stylów `Card.css`.
-- Renderowanie pojedynczej karty z przykładową zawartością `🃏 Karta 🃏`.
-- Klasa `.card` tworzy każdą poszczególną kartę w naszej grze
+- Dodano `grid-template-columns: repeat(4, var(--card-size))` – 4 kolumny o szerokości karty
+- Dodano `gap: var(--gap)` – odstępy między kartami
+
+---
+
+## Kluczowe koncepcje
+
+- **Array.map()** – transformacja tablicy na listę komponentów React
+- **Spread operator (`...`)** – kopiowanie tablicy bez modyfikacji oryginału
+- **TypeScript interface** – definiowanie struktury propsów komponentu
+- **Key prop** – unikalny identyfikator dla elementów listy w React
+- **CSS Grid** – układ planszy z czterema kolumnami
 
 ---
 
 ## Struktura projektu po tym commicie
 ```
 src/
-├── App.tsx
-├── App.css
+├── assets/
+│   └── boards.ts          # Tablice z kartami
 ├── components/
-│ ├── Board.tsx
-│ └── Card.tsx
-├── styles/
-│ ├── Board.css
-│ └── Card.css
-└── main.tsx
+│   ├── Board.tsx          # Plansza z logiką tasowania
+│   └── Card.tsx           # Pojedyncza karta przyjmująca wartość
+└── styles/
+    ├── Board.css          # Grid layout planszy
+    └── Card.css
 ```
-
-- **`App.tsx`** – główny kontener aplikacji  
-- **`Board.tsx`** – plansza gry  
-- **`Card.tsx`** – pojedyncza karta  
-- **`styles/`** – osobne pliki CSS dla komponentów
-
----
-
-## Przepływ działania aplikacji
-
-1. `index.html` ładuje `<div id="root"></div>`.  
-2. `main.tsx` montuje komponent `App` w tym divie.  
-3. `App.tsx` wyświetla nagłówek i planszę (`Board`).  
-4. `Board.tsx` renderuje przykładowe karty (`Card`).  
-5. Style CSS nadają wygląd kontenerom, planszy i kartom.
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Stworzenie tablicy z kartami`
+**Commit:** `Dodanie dynamicznej zmiany poziomu`
