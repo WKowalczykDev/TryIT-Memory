@@ -1,77 +1,91 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Dodanie tablic z kartami i funkcji tasowania`
+**Commit:** `Dodanie dynamicznej zmiany poziomu`
 
-W tym etapie dodajemy tablice z wartościami kart dla różnych poziomów trudności oraz implementujemy funkcję do losowego tasowania kart.
+W tym etapie przenosimy logikę tasowania do głównego komponentu aplikacji i dodajemy możliwość wyboru poziomu trudności gry przez użytkownika.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Utworzenie pliku `boards.ts`
+### 1. Przeniesienie funkcji `shuffleArray` do `App.tsx`
 
-- Dodano trzy tablice reprezentujące różne poziomy trudności:
-  - `easyBoard` – 16 kart (8 par) z literami A-H
-  - `mediumBoard` – 24 karty (12 par) z literami A-L
-  - `hardBoard` – 36 kart (18 par) z literami A-R
-- Każda litera pojawia się dwa razy, tworząc pary do odnalezienia w grze.
+- Funkcja tasowania została przeniesiona z `Board.tsx` do `App.tsx`
+- Dzięki temu logika tasowania jest w jednym miejscu i kontroluje całą aplikację
 
-### 2. Funkcja tasowania `shuffleArray` w `Board.tsx`
+### 2. Dodanie stanu poziomu w `App.tsx`
 
-- Implementacja algorytmu tasowania tablicy:
-  - Tworzy pustą tablicę `newArray` na wynik
-  - Kopiuje oryginalną tablicę za pomocą spread operatora `[...array]`
-  - W pętli `while` losuje element z kopii, dodaje do nowej tablicy i usuwa z kopii
-  - Używa `Math.random()` i `Math.floor()` do losowania indeksów
-  - Zwraca potasowaną tablicę
-- Dzięki tej funkcji karty będą za każdym razem w losowej kolejności.
+- Import hooka `useState` z React
+- Utworzenie stanu `level` z trzema możliwymi wartościami: `"easy" | "medium" | "hard"`
+- Domyślna wartość to `'easy'`
+- `setLevel` - funkcja do zmiany poziomu trudności
+- `setCards` - funkcja do zmiany wartości potasowanych kart (z wykorzystaniem getBoard)
 
-### 3. Aktualizacja komponentu `Board.tsx`
+### 3. Obsługa wyboru poziomu
 
-- Import tablic z `boards.ts`: `easyBoard`, `mediumBoard`, `hardBoard`
-- Wywołanie `shuffleArray(mediumBoard)` i przypisanie wyniku do `shuffledCards`
-- Użycie metody `.map()` do renderowania kart:
-  - Iteracja przez tablicę `shuffledCards`
-  - Każda karta otrzymuje unikalny `key={index}` (wymagane przez React)
-  - Przekazanie wartości karty przez prop `value={card}`
+- Funkcja `handleChange` obsługuje zmianę w elemencie `<select>`
+- `e.target.value` pobiera wybraną wartość z opcji
+- `setLevel` aktualizuje stan aplikacji
 
-### 4. Aktualizacja komponentu `Card.tsx`
+### 4. Funkcja `getBoard`
 
-- Dodanie interfejsu TypeScript `CardProps` z właściwością `value: string`
-- Komponent przyjmuje prop `value` i wyświetla go w divie
-- Określenie typu danej wejściowej do komponentu Card: `{value}: CardProps`
+- Przyjmuje wybrany poziom jako argument
+- Używa instrukcji warunkowych `if/else` do wyboru odpowiedniej tablicy
+- Zwraca potasowaną tablicę kart dla wybranego poziomu
+- Łączy wybór planszy z tasowaniem w jednej funkcji
 
-### 5. Stylowanie w `Board.css`
+### 5. Interfejs użytkownika – kontrolki
 
-- Dodano `grid-template-columns: repeat(4, var(--card-size))` – 4 kolumny o szerokości karty
-- Dodano `gap: var(--gap)` – odstępy między kartami
+- Dodano `<div className="controls">` z elementem `<select>`
+- Trzy opcje: Łatwy, Średni, Trudny
+- `value={level}` – aktualna wartość selecta powiązana ze stanem
+- `onChange={handleChange}` – wywołanie funkcji przy zmianie wyboru
+
+### 6. Aktualizacja komponentu `Board.tsx`
+
+- Usunięto funkcję `shuffleArray` i import tablic
+- Dodano interfejs `BoardProps` z właściwościami:
+  - `cards: string[]` – tablica potasowanych kart
+  - `level: "easy" | "medium" | "hard"` – poziom trudności
+- Komponent otrzymuje dane przez propsy zamiast je generować
+- Klasa CSS planszy: `className={\`board ${level}\`}` – dynamiczne style dla każdego poziomu
+- Renderowanie kart z propsa `cards` zamiast lokalnej zmiennej
 
 ---
 
 ## Kluczowe koncepcje
 
-- **Array.map()** – transformacja tablicy na listę komponentów React
-- **Spread operator (`...`)** – kopiowanie tablicy bez modyfikacji oryginału
-- **TypeScript interface** – definiowanie struktury propsów komponentu
-- **Key prop** – unikalny identyfikator dla elementów listy w React
-- **CSS Grid** – układ planszy z czterema kolumnami
+- **useState** – zarządzanie stanem komponentu (wybrany poziom)
+- **Event handlers** – obsługa zdarzeń (`onChange`)
+- **Controlled components** – element `<select>` kontrolowany przez stan React
+- **Props drilling** – przekazywanie danych z rodzica do dziecka
+- **TypeScript union types** – `"easy" | "medium" | "hard"` jako typ
+- **Template literals** – dynamiczne klasy CSS
+
+---
+
+## Przepływ danych
+
+1. Użytkownik wybiera poziom w `<select>`
+2. `handleChange` aktualizuje stan `level`
+3. `getBoard(level)` wybiera i tasuje odpowiednią tablicę
+4. Potasowane karty przekazywane są do `Board` przez props `cards`
+5. `Board` renderuje karty z otrzymanej tablicy
 
 ---
 
 ## Struktura projektu po tym commicie
 ```
 src/
+├── App.tsx               # Logika wyboru poziomu i tasowania
 ├── assets/
-│   └── boards.ts          # Tablice z kartami
-├── components/
-│   ├── Board.tsx          # Plansza z logiką tasowania
-│   └── Card.tsx           # Pojedyncza karta przyjmująca wartość
-└── styles/
-    ├── Board.css          # Grid layout planszy
-    └── Card.css
+│   └── boards.ts        # Tablice z kartami
+└── components/
+    ├── Board.tsx        # Plansza przyjmująca karty przez props
+    └── Card.tsx         # Pojedyncza karta
 ```
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Dodanie dynamicznej zmiany poziomu`
+**Commit:** `Implementacja odwracania kart i logiki gry`
