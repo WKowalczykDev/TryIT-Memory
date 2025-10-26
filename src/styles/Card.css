@@ -4,3 +4,44 @@
   cursor: pointer;
   border: 2px dashed blue;
 }
+
+/* Warto zajrzeć, jak ktoś nie rozumie jak działa pozycjonowanie: https://developer.mozilla.org/en-US/docs/Web/CSS/position */
+.card-inner {
+  /* ustawiamy position relative, aby position absolute w 'dziecku', był zależny od wielkości tego elementu */
+  position: relative;
+  /* ustawiamy żeby był taki sam wielkościowo jak element nadrzędny */
+  width: 100%;
+  height: 100%;
+  /* ustawiamy co mamy zrobić, kiedy element zostanie kliknięty */
+  transform-style: preserve-3d;
+  /* potrzebujemy żeby css rozumieał wnętrze tego <div> jako przestrzeń 3d -> możemy obrócić element o 180 stopni */
+  transition: transform 0.4s;
+  /* czas trwania obrotu */
+}
+
+/* Dla obiektu card-inner wewnątrz obiektu card.flipped -> to jest ZUPEŁNIE coś innego niż .card.flipped, .card-inner*/
+.card.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Dla obu klas zarówno card-front i card back te same własności */
+.card-front,
+.card-back {
+  position: absolute;
+  /* pozycja nie jest zależna od innych elementów wewnątrz rodzica */
+  /* ustawiamy żeby był taki sam wielkościowo jak element nadrzędny */
+  height: 100%;
+  width: 100%;
+  /* ustawiamy, żeby rewers nie był widoczny i nie 'nadpisywał się' */
+  backface-visibility: hidden;
+}
+
+.card-front {
+  background-color: orange;
+}
+
+.card-back {
+  background-color: greenyellow;
+  /* początkowe ustawienie rewersu na 180 - stopni - zachowuje się jak karta */
+  transform: rotateY(180deg);
+}

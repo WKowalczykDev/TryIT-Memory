@@ -6,7 +6,6 @@
   gap: var(--gap);
 }
 
-/* na podstawie dodanych klas easy medium i hard zmieniono grid-boxa */
 .board.easy {
   grid-template-columns: repeat(4, var(--card-size));
 }
