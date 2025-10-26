@@ -1,91 +1,94 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Dodanie dynamicznej zmiany poziomu`
+**Commit:** `Implementacja odwracania kart i logiki gry`
 
-W tym etapie przenosimy logikę tasowania do głównego komponentu aplikacji i dodajemy możliwość wyboru poziomu trudności gry przez użytkownika.
+W tym etapie dodajemy mechanizm odwracania kart z animacją 3D. Każda karta może zostać kliknięta i odwróci się, pokazując swoją wartość.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Przeniesienie funkcji `shuffleArray` do `App.tsx`
-
-- Funkcja tasowania została przeniesiona z `Board.tsx` do `App.tsx`
-- Dzięki temu logika tasowania jest w jednym miejscu i kontroluje całą aplikację
-
-### 2. Dodanie stanu poziomu w `App.tsx`
+### 1. Dodanie stanu `flipped` w `Card.tsx`
 
 - Import hooka `useState` z React
-- Utworzenie stanu `level` z trzema możliwymi wartościami: `"easy" | "medium" | "hard"`
-- Domyślna wartość to `'easy'`
-- `setLevel` - funkcja do zmiany poziomu trudności
-- `setCards` - funkcja do zmiany wartości potasowanych kart (z wykorzystaniem getBoard)
+- Utworzenie stanu `flipped` z wartością początkową `false`
+- `setFlipped` – funkcja do zmiany stanu karty (odwrócona/zakryta)
 
-### 3. Obsługa wyboru poziomu
+### 2. Funkcja `handleClick`
 
-- Funkcja `handleChange` obsługuje zmianę w elemencie `<select>`
-- `e.target.value` pobiera wybraną wartość z opcji
-- `setLevel` aktualizuje stan aplikacji
+- Obsługuje kliknięcie w kartę
+- `setFlipped(!flipped)` – przełącza stan na przeciwny (true ↔ false)
+- Negacja `!` odwraca wartość logiczną
 
-### 4. Funkcja `getBoard`
+### 3. Struktura HTML karty
 
-- Przyjmuje wybrany poziom jako argument
-- Używa instrukcji warunkowych `if/else` do wyboru odpowiedniej tablicy
-- Zwraca potasowaną tablicę kart dla wybranego poziomu
-- Łączy wybór planszy z tasowaniem w jednej funkcji
+- Trzy zagnieżdżone divy tworzące efekt 3D:
+  - `.card` – zewnętrzny kontener
+  - `.card-inner` – element obracany
+  - `.card-front` – przód karty (znak zapytania `?`)
+  - `.card-back` – tył karty (wartość karty)
 
-### 5. Interfejs użytkownika – kontrolki
+### 4. Dynamiczne klasy CSS
 
-- Dodano `<div className="controls">` z elementem `<select>`
-- Trzy opcje: Łatwy, Średni, Trudny
-- `value={level}` – aktualna wartość selecta powiązana ze stanem
-- `onChange={handleChange}` – wywołanie funkcji przy zmianie wyboru
+- `className={\`card ${flipped ? 'flipped' : ''}\`}` – warunkowe dodawanie klasy
+- Operator trójargumentowy (ternary): `warunek ? wartość_true : wartość_false`
+- Gdy `flipped === true` → klasa `card flipped`
+- Gdy `flipped === false` → klasa `card`
 
-### 6. Aktualizacja komponentu `Board.tsx`
+### 5. Stylowanie animacji 3D w `Card.css`
 
-- Usunięto funkcję `shuffleArray` i import tablic
-- Dodano interfejs `BoardProps` z właściwościami:
-  - `cards: string[]` – tablica potasowanych kart
-  - `level: "easy" | "medium" | "hard"` – poziom trudności
-- Komponent otrzymuje dane przez propsy zamiast je generować
-- Klasa CSS planszy: `className={\`board ${level}\`}` – dynamiczne style dla każdego poziomu
-- Renderowanie kart z propsa `cards` zamiast lokalnej zmiennej
+**`.card-inner`:**
+- `position: relative` – punkt odniesienia dla dziecka elementu z `position: absolute`
+- `transform-style: preserve-3d` – zachowanie przestrzeni 3D dla dziecka elementu
+- `transition: transform 0.4s` – płynna animacja obrotu przez 0.4 sekundy
+
+**`.card.flipped .card-inner`:**
+- `transform: rotateY(180deg)` – obrót wokół osi Y o 180 stopni
+- Selektor potomny: efekt stosowany tylko gdy karta ma klasę `flipped`
+
+**`.card-front` i `.card-back`:**
+- `position: absolute` – nakładanie się elementów
+- `width: 100%` i `height: 100%` – wypełnienie całego kontenera
+- `backface-visibility: hidden` – ukrycie niewidocznej strony karty
+
+**`.card-back`:**
+- `transform: rotateY(180deg)` – początkowy obrót - rewers karty z literą alfabetu
 
 ---
 
 ## Kluczowe koncepcje
 
-- **useState** – zarządzanie stanem komponentu (wybrany poziom)
-- **Event handlers** – obsługa zdarzeń (`onChange`)
-- **Controlled components** – element `<select>` kontrolowany przez stan React
-- **Props drilling** – przekazywanie danych z rodzica do dziecka
-- **TypeScript union types** – `"easy" | "medium" | "hard"` jako typ
-- **Template literals** – dynamiczne klasy CSS
+- **useState w komponencie** – każda karta ma własny niezależny stan
+- **Event handling** – `onClick={handleClick}` reaguje na kliknięcie
+- **Operator trójargumentowy** – zwięzłe wyrażenia warunkowe
+- **CSS 3D transforms** – `rotateY()`, `transform-style`, `backface-visibility`
+- **CSS transitions** – płynne animacje między stanami
+- **Selektory potomne CSS** – `.card.flipped .card-inner` stosuje style tylko dla odwróconych kart
 
 ---
 
-## Przepływ danych
+## Przepływ interakcji
 
-1. Użytkownik wybiera poziom w `<select>`
-2. `handleChange` aktualizuje stan `level`
-3. `getBoard(level)` wybiera i tasuje odpowiednią tablicę
-4. Potasowane karty przekazywane są do `Board` przez props `cards`
-5. `Board` renderuje karty z otrzymanej tablicy
+1. Użytkownik klika kartę
+2. `handleClick` odwraca wartość `flipped` (false → true)
+3. Klasa `flipped` jest dodawana do diva `.card`
+4. CSS obraca `.card-inner` o 180 stopni
+5. Widoczna staje się `.card-back` z wartością karty
+6. Ponowne kliknięcie odwraca kartę z powrotem
 
 ---
 
-## Struktura projektu po tym commicie
+## Struktura komponentu Card
 ```
-src/
-├── App.tsx               # Logika wyboru poziomu i tasowania
-├── assets/
-│   └── boards.ts        # Tablice z kartami
-└── components/
-    ├── Board.tsx        # Plansza przyjmująca karty przez props
-    └── Card.tsx         # Pojedyncza karta
+<div className="card [flipped]">      ← stan i kliknięcie
+  <div className="card-inner">        ← obraca się
+    <div className="card-front">?</div>      ← przód
+    <div className="card-back">{value}</div>  ← tył
+  </div>
+</div>
 ```
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Implementacja odwracania kart i logiki gry`
+**Commit:** `Dodanie sprawdzania par kart`
