@@ -1,94 +1,132 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Implementacja odwracania kart i logiki gry`
+**Commit:** `Dodanie sprawdzania par kart`
 
-W tym etapie dodajemy mechanizm odwracania kart z animacją 3D. Każda karta może zostać kliknięta i odwróci się, pokazując swoją wartość.
+W tym etapie przenosimy logikę odwracania kart do komponentu `Board` i implementujemy mechanizm sprawdzania, czy dwie odwrócone karty tworzą parę.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Dodanie stanu `flipped` w `Card.tsx`
+### 1. Przeniesienie stanu z `Card` do `Board`
 
-- Import hooka `useState` z React
-- Utworzenie stanu `flipped` z wartością początkową `false`
-- `setFlipped` – funkcja do zmiany stanu karty (odwrócona/zakryta)
+- Stan `flipped` przeniesiony z pojedynczej karty do `Board`
+- Centralne zarządzanie wszystkimi odwróconymi kartami
+- Umożliwia porównywanie kart między sobą
 
-### 2. Funkcja `handleClick`
+### 2. Nowy interfejs `FlippedCard` w `Board.tsx`
 
-- Obsługuje kliknięcie w kartę
-- `setFlipped(!flipped)` – przełącza stan na przeciwny (true ↔ false)
-- Negacja `!` odwraca wartość logiczną
+- Definiuje strukturę obiektu reprezentującego odwróconą kartę
+- `index: number` – pozycja karty na planszy
+- `value: string` – wartość karty (litera)
 
-### 3. Struktura HTML karty
+### 3. Stany w komponencie `Board`
 
-- Trzy zagnieżdżone divy tworzące efekt 3D:
-  - `.card` – zewnętrzny kontener
-  - `.card-inner` – element obracany
-  - `.card-front` – przód karty (znak zapytania `?`)
-  - `.card-back` – tył karty (wartość karty)
+**`pairCards`** – tablica znalezionych par:
+- Przechowuje karty, które pasują do siebie
+- Karty z tej tablicy pozostają odwrócone
 
-### 4. Dynamiczne klasy CSS
+**`flippedCards`** – tablica tymczasowo odwróconych kart:
+- Przechowuje aktualnie odkryte karty (maksymalnie 2)
+- Czyszczona po sprawdzeniu pary
 
-- `className={\`card ${flipped ? 'flipped' : ''}\`}` – warunkowe dodawanie klasy
-- Operator trójargumentowy (ternary): `warunek ? wartość_true : wartość_false`
-- Gdy `flipped === true` → klasa `card flipped`
-- Gdy `flipped === false` → klasa `card`
+**`disabled`** – blokada interakcji:
+- `true` – użytkownik nie może klikać w karty
+- `false` – użytkownik może klikać
+- Zapobiega odwracaniu wielu kart jednocześnie
 
-### 5. Stylowanie animacji 3D w `Card.css`
+### 4. Funkcja `handleCardClick`
 
-**`.card-inner`:**
-- `position: relative` – punkt odniesienia dla dziecka elementu z `position: absolute`
-- `transform-style: preserve-3d` – zachowanie przestrzeni 3D dla dziecka elementu
-- `transition: transform 0.4s` – płynna animacja obrotu przez 0.4 sekundy
+**Walidacja kliknięcia:**
+- `if (disabled) return` – ignoruje kliknięcia gdy plansza zablokowana
+- `.find(myCard => myCard.index == index)` sprawdza czy karta już odwrócona w `flippedCards` lub `pairCards`
+- Zapobiega wielokrotnemu klikaniu tej samej karty
 
-**`.card.flipped .card-inner`:**
-- `transform: rotateY(180deg)` – obrót wokół osi Y o 180 stopni
-- Selektor potomny: efekt stosowany tylko gdy karta ma klasę `flipped`
+**Dodawanie karty:**
+- `newFlippedCards = [...flippedCards, { index, value }]` – dodaje nową kartę
+- Spread operator tworzy nową tablicę z dotychczasowymi kartami + nowa
 
-**`.card-front` i `.card-back`:**
-- `position: absolute` – nakładanie się elementów
-- `width: 100%` i `height: 100%` – wypełnienie całego kontenera
-- `backface-visibility: hidden` – ukrycie niewidocznej strony karty
+**Sprawdzanie pary (gdy `length === 2`):**
+- **Para znaleziona** (`newFlippedCards[0].value === value`):
+  - Dodaje obie karty do `pairCards`
+  - Czyści `flippedCards`
+- **Para nie znaleziona**:
+  - `setDisabled(true)` – blokuje planszę
+  - `setTimeout` po 400ms:
+    - Czyści `flippedCards` (karty odwracają się z powrotem)
+    - Odblokowuje planszę `setDisabled(false)`
 
-**`.card-back`:**
-- `transform: rotateY(180deg)` – początkowy obrót - rewers karty z literą alfabetu
+### 5. Aktualizacja komponentu `Card.tsx`
+
+**Uproszczenie komponentu:**
+- `flipped: boolean` – czy karta jest odwrócona (kontrolowane z `Board`)
+- `onClickToBoard: () => void` – funkcja wywoływana przy kliknięciu - wykonuje się w `Board`
+
+### 6. Przekazywanie propsów w `Board.tsx`
+
+**Prop `flipped`:**
+```typescript
+flipped={(flippedCards.find((card) => card.index === index) ||
+         pairCards.find((card) => card.index === index)) ? true : false}
+```
+- Sprawdza czy dana karta z mapy o danym `index` jest w `flippedCards` lub `pairCards`
+  - `find()` albo znajdzie obiekt w jednej z tablic - wtedy go zwraca, czyli istnieje
+  - bądź nie znajdzie i wtedy zwróci _undefined_, czyli nie istnieje
+- Operator `||` (OR) – prawda jeśli w którejkolwiek tablicy
+- Zwraca `true` (odwrócona) lub `false` (zakryta)
+
+**Prop `onClickToBoard`:**
+```typescript
+onClickToBoard={() => handleCardClick(index, card)}
+```
+- Funkcja strzałkowa pokazuje, że po kliknięciu w Card.tsx przekazujemy jej index i nazwę (alfabet) do handleCardClick w Board.tsx
+- Przekazuje `index` i wartość `card` do funkcji obsługującej
 
 ---
 
 ## Kluczowe koncepcje
 
-- **useState w komponencie** – każda karta ma własny niezależny stan
-- **Event handling** – `onClick={handleClick}` reaguje na kliknięcie
-- **Operator trójargumentowy** – zwięzłe wyrażenia warunkowe
-- **CSS 3D transforms** – `rotateY()`, `transform-style`, `backface-visibility`
-- **CSS transitions** – płynne animacje między stanami
-- **Selektory potomne CSS** – `.card.flipped .card-inner` stosuje style tylko dla odwróconych kart
+- **Lifting state up** – przeniesienie stanu wyżej w hierarchii komponentów
+- **Array.find()** – wyszukiwanie elementu w tablicy
+- **Spread operator** – kopiowanie i rozszerzanie tablic
+- **setTimeout** – opóźnione wykonanie kodu
+- **Asynchroniczność useState** – używanie `newFlippedCards` zamiast czekania na update
+- **Callback props** – przekazywanie funkcji do komponentów potomnych
+- **Disabled state** – blokowanie interakcji podczas animacji
 
 ---
 
-## Przepływ interakcji
+## Przepływ logiki gry
 
-1. Użytkownik klika kartę
-2. `handleClick` odwraca wartość `flipped` (false → true)
-3. Klasa `flipped` jest dodawana do diva `.card`
-4. CSS obraca `.card-inner` o 180 stopni
-5. Widoczna staje się `.card-back` z wartością karty
-6. Ponowne kliknięcie odwraca kartę z powrotem
+1. Użytkownik klika pierwszą kartę → dodana do `flippedCards`
+2. Użytkownik klika drugą kartę → dodana do `flippedCards` (length === 2)
+3. **Jeśli wartości są takie same:**
+   - Obie karty trafiają do `pairCards`
+   - `flippedCards` jest czyszczone
+   - Karty pozostają odwrócone
+4. **Jeśli wartości są różne:**
+   - Plansza zostaje zablokowana (`disabled = true`)
+   - Po 400ms karty odwracają się (czyszczenie `flippedCards`)
+   - Plansza zostaje odblokowana (`disabled = false`)
 
 ---
 
-## Struktura komponentu Card
-```
-<div className="card [flipped]">      ← stan i kliknięcie
-  <div className="card-inner">        ← obraca się
-    <div className="card-front">?</div>      ← przód
-    <div className="card-back">{value}</div>  ← tył
-  </div>
-</div>
+## Struktura przykładowych danych w momencie przechwycenia nowej pary
+```typescript
+flippedCards: [
+  { index: 3, value: 'A' },
+  { index: 7, value: 'A' }
+]
+
+pairCards: [
+  { index: 0, value: 'B' },
+  { index: 5, value: 'B' },
+  { index: 3, value: 'A' },
+  { index: 7, value: 'A' }
+]
 ```
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Dodanie sprawdzania par kart`
+**Commit:** `Zablokowanie zmiany poziomu podczas rozgrywki`
