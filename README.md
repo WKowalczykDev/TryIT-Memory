@@ -1,132 +1,97 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Dodanie sprawdzania par kart`
+**Commit:** `Zablokowanie zmiany poziomu podczas rozgrywki`
 
-W tym etapie przenosimy logikę odwracania kart do komponentu `Board` i implementujemy mechanizm sprawdzania, czy dwie odwrócone karty tworzą parę.
+W tym etapie dodajemy mechanizm blokowania możliwości zmiany poziomu trudności po rozpoczęciu gry. Gra rozpoczyna się w momencie kliknięcia pierwszej karty.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Przeniesienie stanu z `Card` do `Board`
+### 1. Nowy stan `isGameChangePossible` w `App.tsx`
 
-- Stan `flipped` przeniesiony z pojedynczej karty do `Board`
-- Centralne zarządzanie wszystkimi odwróconymi kartami
-- Umożliwia porównywanie kart między sobą
+- Import hooka `useEffect` z React
+- Utworzenie stanu `isGameChangePossible` z wartością początkową `true`
+- Kontroluje, czy użytkownik może zmienić poziom trudności
+- `setIsGameChangePossible` – funkcja przekazywana do `Board` jako props
 
-### 2. Nowy interfejs `FlippedCard` w `Board.tsx`
+### 2. Dodanie `id` do elementu `<select>`
 
-- Definiuje strukturę obiektu reprezentującego odwróconą kartę
-- `index: number` – pozycja karty na planszy
-- `value: string` – wartość karty (litera)
+- `<select id='levelChangeSelect'>` – dodanie identyfikatora do elementu, aby móc zmieniać jego klikalność
+- Umożliwia odnalezienie elementu w `useEffect`
 
-### 3. Stany w komponencie `Board`
+### 3. Hook `useEffect` do zarządzania atrybutem `disabled` w <select>
 
-**`pairCards`** – tablica znalezionych par:
-- Przechowuje karty, które pasują do siebie
-- Karty z tej tablicy pozostają odwrócone
+**Pobieranie elementu:**
+- `document.getElementById("levelChangeSelect")` – odnalezienie selecta
+- Rzutowanie typu: `as HTMLSelectElement | null` – TypeScript wie, jakiego typu jest element
 
-**`flippedCards`** – tablica tymczasowo odwróconych kart:
-- Przechowuje aktualnie odkryte karty (maksymalnie 2)
-- Czyszczona po sprawdzeniu pary
+**Warunek sprawdzający:**
+- `if (select)` – upewnienie się, że element istnieje (ochrona przed błędami)
 
-**`disabled`** – blokada interakcji:
-- `true` – użytkownik nie może klikać w karty
-- `false` – użytkownik może klikać
-- Zapobiega odwracaniu wielu kart jednocześnie
+**Ustawianie atrybutu:**
+- `select.disabled = !isGameChangePossible` – ustawienie atrybutu disabled w <select> na wartość przeciwną względem isGameChangePossible
+  - Gdy `isGameChangePossible === false` → `disabled = true` (select zablokowany)
+  - Gdy `isGameChangePossible === true` → `disabled = false` (select aktywny)
 
-### 4. Funkcja `handleCardClick`
+**Dependency array:**
+- `[isGameChangePossible]` – useEffect uruchamia się przy każdej zmianie zmiennej isGameChangePossible
 
-**Walidacja kliknięcia:**
-- `if (disabled) return` – ignoruje kliknięcia gdy plansza zablokowana
-- `.find(myCard => myCard.index == index)` sprawdza czy karta już odwrócona w `flippedCards` lub `pairCards`
-- Zapobiega wielokrotnemu klikaniu tej samej karty
+### 4. Aktualizacja interfejsu `BoardProps`
 
-**Dodawanie karty:**
-- `newFlippedCards = [...flippedCards, { index, value }]` – dodaje nową kartę
-- Spread operator tworzy nową tablicę z dotychczasowymi kartami + nowa
+- Dodano nowy props: `setIsGameChangePossible: (value: boolean) => void`
+- Funkcja przyjmująca wartość boolean i nic nie zwracająca
 
-**Sprawdzanie pary (gdy `length === 2`):**
-- **Para znaleziona** (`newFlippedCards[0].value === value`):
-  - Dodaje obie karty do `pairCards`
-  - Czyści `flippedCards`
-- **Para nie znaleziona**:
-  - `setDisabled(true)` – blokuje planszę
-  - `setTimeout` po 400ms:
-    - Czyści `flippedCards` (karty odwracają się z powrotem)
-    - Odblokowuje planszę `setDisabled(false)`
+### 5. Detekcja rozpoczęcia gry w `handleCardClick`
 
-### 5. Aktualizacja komponentu `Card.tsx`
-
-**Uproszczenie komponentu:**
-- `flipped: boolean` – czy karta jest odwrócona (kontrolowane z `Board`)
-- `onClickToBoard: () => void` – funkcja wywoływana przy kliknięciu - wykonuje się w `Board`
-
-### 6. Przekazywanie propsów w `Board.tsx`
-
-**Prop `flipped`:**
+**Warunek rozpoczęcia:**
 ```typescript
-flipped={(flippedCards.find((card) => card.index === index) ||
-         pairCards.find((card) => card.index === index)) ? true : false}
+if(flippedCards.length === 0 && pairCards.length === 0){
+    handleGameStart();
+}
 ```
-- Sprawdza czy dana karta z mapy o danym `index` jest w `flippedCards` lub `pairCards`
-  - `find()` albo znajdzie obiekt w jednej z tablic - wtedy go zwraca, czyli istnieje
-  - bądź nie znajdzie i wtedy zwróci _undefined_, czyli nie istnieje
-- Operator `||` (OR) – prawda jeśli w którejkolwiek tablicy
-- Zwraca `true` (odwrócona) lub `false` (zakryta)
+- Sprawdza, czy nie ma żadnych odwróconych kart
+- Sprawdza, czy nie ma żadnych znalezionych par
+- Jeśli oba warunki prawdziwe → pierwsze kliknięcie → gra się rozpoczyna
 
-**Prop `onClickToBoard`:**
-```typescript
-onClickToBoard={() => handleCardClick(index, card)}
-```
-- Funkcja strzałkowa pokazuje, że po kliknięciu w Card.tsx przekazujemy jej index i nazwę (alfabet) do handleCardClick w Board.tsx
-- Przekazuje `index` i wartość `card` do funkcji obsługującej
+### 6. Funkcja `handleGameStart` w `Board.tsx`
+
+- Wywołuje `setIsGameChangePossible(false)` – blokuje select w `App`
+- Wywoływana w momencie rozpoczęcia gry
+
 
 ---
 
 ## Kluczowe koncepcje
 
-- **Lifting state up** – przeniesienie stanu wyżej w hierarchii komponentów
-- **Array.find()** – wyszukiwanie elementu w tablicy
-- **Spread operator** – kopiowanie i rozszerzanie tablic
-- **setTimeout** – opóźnione wykonanie kodu
-- **Asynchroniczność useState** – używanie `newFlippedCards` zamiast czekania na update
-- **Callback props** – przekazywanie funkcji do komponentów potomnych
-- **Disabled state** – blokowanie interakcji podczas animacji
+- **useEffect** – wywołuje się za każdą zmianą 'dependency array' - w naszym przypadku z każdą zmianą isGameChangePossible
+- **document.getElementById** – dostęp do elementów DOM
+- **Disabled attribute** – blokowanie elementów formularza
+- **Prop drilling** – przekazywanie funkcji przez wiele poziomów komponentów
+- **Warunki logiczne** – `&&` (AND) sprawdza oba warunki jednocześnie
 
 ---
 
-## Przepływ logiki gry
+## Przepływ blokowania poziomu
 
-1. Użytkownik klika pierwszą kartę → dodana do `flippedCards`
-2. Użytkownik klika drugą kartę → dodana do `flippedCards` (length === 2)
-3. **Jeśli wartości są takie same:**
-   - Obie karty trafiają do `pairCards`
-   - `flippedCards` jest czyszczone
-   - Karty pozostają odwrócone
-4. **Jeśli wartości są różne:**
-   - Plansza zostaje zablokowana (`disabled = true`)
-   - Po 400ms karty odwracają się (czyszczenie `flippedCards`)
-   - Plansza zostaje odblokowana (`disabled = false`)
+1. Gra startuje z `isGameChangePossible = true` → select aktywny
+2. Użytkownik klika pierwszą kartę
+3. `handleCardClick` wykrywa start gry (puste tablice `flippedCards` i `pairCards`)
+4. `handleGameStart()` wywołuje `setIsGameChangePossible(false)`
+5. Stan `isGameChangePossible` zmienia się na `false`
+6. `useEffect` w `App` reaguje na zmianę
+7. `select.disabled = true` – select zostaje zablokowany
+8. Użytkownik nie może zmienić poziomu do końca gry
 
 ---
 
-## Struktura przykładowych danych w momencie przechwycenia nowej pary
-```typescript
-flippedCards: [
-  { index: 3, value: 'A' },
-  { index: 7, value: 'A' }
-]
+## Bezpieczeństwo kodu
 
-pairCards: [
-  { index: 0, value: 'B' },
-  { index: 5, value: 'B' },
-  { index: 3, value: 'A' },
-  { index: 7, value: 'A' }
-]
-```
+- **Null check**: `if (select)` – sprawdzenie czy element istnieje przed manipulacją
+- **TypeScript typing**: `HTMLSelectElement | null` – precyzyjne typy
+- **Dependency array**: Effect uruchamia się tylko gdy potrzeba
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Zablokowanie zmiany poziomu podczas rozgrywki`
+**Commit:** `Wykrywanie końca gry`
