@@ -1,97 +1,82 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Zablokowanie zmiany poziomu podczas rozgrywki`
+**Commit:** `Wykrywanie końca gry`
 
-W tym etapie dodajemy mechanizm blokowania możliwości zmiany poziomu trudności po rozpoczęciu gry. Gra rozpoczyna się w momencie kliknięcia pierwszej karty.
+W tym etapie implementujemy mechanizm wykrywania momentu, gdy wszystkie pary kart zostały odkryte. Po zakończeniu gry odblokowujemy możliwość zmiany poziomu.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Nowy stan `isGameChangePossible` w `App.tsx`
+### 1. Import hooka `useEffect` w `Board.tsx`
 
-- Import hooka `useEffect` z React
-- Utworzenie stanu `isGameChangePossible` z wartością początkową `true`
-- Kontroluje, czy użytkownik może zmienić poziom trudności
-- `setIsGameChangePossible` – funkcja przekazywana do `Board` jako props
+- Dodano import `useEffect` z React
+- Umożliwia reagowanie na zmiany stanu gry
 
-### 2. Dodanie `id` do elementu `<select>`
+### 2. Funkcja `gameEndDetected`
 
-- `<select id='levelChangeSelect'>` – dodanie identyfikatora do elementu, aby móc zmieniać jego klikalność
-- Umożliwia odnalezienie elementu w `useEffect`
+- Wywoływana po odkryciu wszystkich par
+- `console.log("Gra zakończona")` – informacja w konsoli (F12)
+- `setIsGameChangePossible(true)` – odblokowuje select z poziomami trudności
+  - pojawia się nam problem ze zmianą poziomu z odkrytmi już kartami - zaimplementujemy w kolejnym commicie
 
-### 3. Hook `useEffect` do zarządzania atrybutem `disabled` w <select>
+### 3. Hook `useEffect` do wykrywania końca gry
 
-**Pobieranie elementu:**
-- `document.getElementById("levelChangeSelect")` – odnalezienie selecta
-- Rzutowanie typu: `as HTMLSelectElement | null` – TypeScript wie, jakiego typu jest element
+**Warunek zakończenia gry:**
+```typescript
+if (pairCards.length === cards.length && cards.length > 0)
+```
 
-**Warunek sprawdzający:**
-- `if (select)` – upewnienie się, że element istnieje (ochrona przed błędami)
+**Logika warunku:**
+- `pairCards.length === cards.length` – liczba odkrytych kart równa liczbie wszystkich kart
+- `cards.length > 0` – dodatkowe zabezpieczenie przed pustą planszą
+- Oba warunki muszą być spełnione (`&&`)
 
-**Ustawianie atrybutu:**
-- `select.disabled = !isGameChangePossible` – ustawienie atrybutu disabled w <select> na wartość przeciwną względem isGameChangePossible
-  - Gdy `isGameChangePossible === false` → `disabled = true` (select zablokowany)
-  - Gdy `isGameChangePossible === true` → `disabled = false` (select aktywny)
+**Wywołanie funkcji:**
+- Gdy warunek spełniony → `gameEndDetected()` wykonuje akcje końcowe
 
 **Dependency array:**
-- `[isGameChangePossible]` – useEffect uruchamia się przy każdej zmianie zmiennej isGameChangePossible
-
-### 4. Aktualizacja interfejsu `BoardProps`
-
-- Dodano nowy props: `setIsGameChangePossible: (value: boolean) => void`
-- Funkcja przyjmująca wartość boolean i nic nie zwracająca
-
-### 5. Detekcja rozpoczęcia gry w `handleCardClick`
-
-**Warunek rozpoczęcia:**
-```typescript
-if(flippedCards.length === 0 && pairCards.length === 0){
-    handleGameStart();
-}
-```
-- Sprawdza, czy nie ma żadnych odwróconych kart
-- Sprawdza, czy nie ma żadnych znalezionych par
-- Jeśli oba warunki prawdziwe → pierwsze kliknięcie → gra się rozpoczyna
-
-### 6. Funkcja `handleGameStart` w `Board.tsx`
-
-- Wywołuje `setIsGameChangePossible(false)` – blokuje select w `App`
-- Wywoływana w momencie rozpoczęcia gry
-
+- `[pairCards]` – effect uruchamia się tylko przy zmianie tablicy znalezionych par
+- Nie reaguje na niepotrzebne zmiany innych stanów
 
 ---
 
 ## Kluczowe koncepcje
 
-- **useEffect** – wywołuje się za każdą zmianą 'dependency array' - w naszym przypadku z każdą zmianą isGameChangePossible
-- **document.getElementById** – dostęp do elementów DOM
-- **Disabled attribute** – blokowanie elementów formularza
-- **Prop drilling** – przekazywanie funkcji przez wiele poziomów komponentów
-- **Warunki logiczne** – `&&` (AND) sprawdza oba warunki jednocześnie
+- **Dependency array** – kontrola momentu uruchomienia effectu
+- **Porównanie długości tablic** – sprawdzanie postępu gry
+- **Zabezpieczenia warunkowe** – `cards.length > 0` chroni przed błędami
 
 ---
 
-## Przepływ blokowania poziomu
+## Przepływ zakończenia gry
 
-1. Gra startuje z `isGameChangePossible = true` → select aktywny
-2. Użytkownik klika pierwszą kartę
-3. `handleCardClick` wykrywa start gry (puste tablice `flippedCards` i `pairCards`)
-4. `handleGameStart()` wywołuje `setIsGameChangePossible(false)`
-5. Stan `isGameChangePossible` zmienia się na `false`
-6. `useEffect` w `App` reaguje na zmianę
-7. `select.disabled = true` – select zostaje zablokowany
-8. Użytkownik nie może zmienić poziomu do końca gry
+1. Użytkownik znajduje ostatnią parę kart
+2. Karty dodawane są do `pairCards`
+3. `useEffect` wykrywa zmianę w `pairCards`
+4. Sprawdzenie warunku: `pairCards.length === cards.length`
+5. Warunek spełniony → `gameEndDetected()` jest wywoływana
+6. Komunikat w konsoli: "Gra zakończona"
+7. `setIsGameChangePossible(true)` odblokowuje select poziomów
+8. Użytkownik może wybrać nowy poziom i zagrać ponownie
 
 ---
 
-## Bezpieczeństwo kodu
+## Dlaczego `cards.length > 0`?
 
-- **Null check**: `if (select)` – sprawdzenie czy element istnieje przed manipulacją
-- **TypeScript typing**: `HTMLSelectElement | null` – precyzyjne typy
-- **Dependency array**: Effect uruchamia się tylko gdy potrzeba
+- Zabezpieczenie przed sytuacją, gdy obie tablice są puste (0 === 0)
+- W momencie inicjalizacji komponentu mogłoby to błędnie wykryć koniec gry
+- Zapewnia, że gra rzeczywiście została rozegrana
+
+---
+
+## Optymalizacja
+
+- Effect reaguje tylko na `pairCards`, ignorując zmiany w `flippedCards` czy `disabled`
+- Minimalizuje niepotrzebne sprawdzenia warunku
+- Poprawa wydajności aplikacji
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Wykrywanie końca gry`
+**Commit:** `Dodanie przycisku resetowania gry`

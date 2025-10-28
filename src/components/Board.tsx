@@ -1,11 +1,11 @@
 import Card from "./Card";
 import './../styles/Board.css'
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface BoardProps {
-  cards: string[];
-  level: "easy" | "medium" | "hard";
-  setIsGameChangePossible: (value:boolean) => void;
+    cards: string[];
+    level: "easy" | "medium" | "hard";
+    setIsGameChangePossible: (value: boolean) => void;
 }
 
 interface FlippedCard {
@@ -19,7 +19,7 @@ function Board({ cards, level, setIsGameChangePossible }: BoardProps) {
     const [flippedCards, setFlippedCards] = useState<FlippedCard[]>([]);
     const [disabled, setDisabled] = useState(false);
 
-    const handleGameStart = () =>{
+    const handleGameStart = () => {
         setIsGameChangePossible(false);
     }
 
@@ -31,7 +31,7 @@ function Board({ cards, level, setIsGameChangePossible }: BoardProps) {
         }
 
         // DETEKCJA ROZPOCZĘCIA GRY
-        if(flippedCards.length===0 && pairCards.length===0){
+        if (flippedCards.length === 0 && pairCards.length === 0) {
             handleGameStart();
         }
 
@@ -56,6 +56,18 @@ function Board({ cards, level, setIsGameChangePossible }: BoardProps) {
         }
 
     };
+
+    const gameWonDetected = () => {
+        console.log("GRA WYGRANA!");
+        alert("Gratulacje! Wygrałaś/eś grę!");
+    }
+
+    useEffect(() => {
+        // DETEKCJA WYGRANIA GRY
+        if (pairCards.length === cards.length && cards.length > 0) {
+            gameWonDetected();
+        }
+    }, [pairCards]);
 
     return (
         <div className={`board ${level}`}>
