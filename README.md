@@ -1,157 +1,193 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Dodanie przycisku resetowania i stałej czasu animacji`
+**Commit:** `Dodanie licznika czasu gry`
 
-W tym etapie implementujemy przycisk "Nowa Gra" umożliwiający restart rozgrywki oraz tworzymy stałą globalną dla czasu animacji odwracania kart.
+W tym etapie implementujemy licznik czasu mierzący czas rozgrywki. Timer startuje wraz z pierwszym kliknięciem karty i zatrzymuje się po wygraniu gry.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Utworzenie pliku `constants.ts`
+### 1. Nowe stany w `Board.tsx`
 
-- Nowy plik: `src/assets/constants.ts`
-- Eksport stałej: `CARD_FLIP_DURATION = 750` (ms)
-- Centralizacja wartości używanych w wielu miejscach
-- Ułatwia późniejsze zmiany – jedna wartość kontroluje wszystkie animacje
+**`timer`:**
+- `useState<number>(0)` – przechowuje czas gry w sekundach
 
-### 2. Nowy stan `newGameFlag` w `App.tsx`
+**`timerID`:**
+- `useState<number | undefined>(undefined)` – przechowuje ID interwału
+- `number` → gdy timer działa (ID zwrócone przez `setInterval`)
+- `undefined` → gdy timer jest zatrzymany
+- Potrzebne do późniejszego zatrzymania licznika
 
-- `useState(false)` – flaga sygnalizująca żądanie nowej gry
-- `true` → użytkownik kliknął przycisk "Nowa Gra"
-- `false` → stan normalny, gra trwa lub zakończona
-- Przekazywana do `Board` jako props
-
-### 3. Przycisk "Nowa Gra" w `App.tsx`
+### 2. Funkcja `startTimer`
 ```typescript
-<div className='newGame'>
-  <button onClick={() => { setNewGameFlag(true) }}>Nowa Gra</button>
-</div>
-```
-
-- Kliknięcie ustawia `newGameFlag` na `true`
-- Uruchamia proces resetowania gry w `Board`
-
-### 4. Hook `useEffect` do tasowania w `App.tsx`
-```typescript
-useEffect(() => {
-  if (!newGameFlag) {
-    setCards(getBoard(level));
-  }
-}, [newGameFlag]);
+const startTimer = () => {
+  if (timerID) return;
+  setTimerID(setInterval(() => {
+    setTimer(prevTimer => {
+      return prevTimer + 0.1;
+    });
+  }, 100));
+}
 ```
 
 **Logika:**
-- Uruchamia się gdy `newGameFlag` zmienia wartość
-- `if (!newGameFlag)` → tasuje karty dopiero gdy flaga wraca do `false`
-- Zapobiega tasowaniu podczas resetowania w `Board`
-- Sekwencja: reset w Board → zmiana flagi → tasowanie kart
+- `if (timerID) return` – nie uruchamia nowego timera jeśli już działa - dodatkowe zabezpieczenie
+- `setInterval(..., 100)` – wykonuje funkcję co 100ms (0.1 sekundy)
+- `prevTimer => prevTimer + 0.1` – zwiększa czas o 0.1s przy każdym wywołaniu
+  - Użycie **functional update** (`prevTimer`) – zapewnia dokładność przy asynchronicznych aktualizacjach
+  - Używamy tego zamiast wywołania `setTimer(timer + 0.1)`
+  - Użycie struktury z prevTimer daje nam **pewność**, że poprawnie zmienimy wartość timera
+- `setTimerID(...)` – zapisuje ID interwału do stanu
 
+### 3. Funkcja `stopTimer`
+```typescript
+const stopTimer = () => {
+  if (timerID) {
+    clearInterval(timerID);
+    setTimerID(undefined);
+  }
+}
+```
 
-### 5. Aktualizacja interfejsu `BoardProps`
+**Logika:**
+- `if (timerID)` – sprawdza czy timer działa
+- `clearInterval(timerID)` – zatrzymuje interwał
+- `setTimerID(undefined)` – czyści stan (oznacza timer jako nieaktywny)
 
-Nowe propsy:
-- `newGameFlag: boolean` – flaga nowej gry
-- `setNewGameFlag: (value: boolean) => void` – funkcja zmiany flagi
+### 4. Integracja z `handleGameStart`
+```typescript
+const handleGameStart = () => {
+  setIsGameChangePossible(false);
+  setTimer(0);          // resetowanie licznika
+  startTimer();         // uruchomienie timera
+}
+```
 
-### 6. Hook `useEffect` do wykrywania resetu w `Board.tsx`
+- `setTimer(0)` – zeruje czas przed startem (bezpieczeństwo)
+- `startTimer()` – rozpoczyna odliczanie
+
+### 5. Aktualizacja warunku startowego
+```typescript
+if (flippedCards.length === 0 && pairCards.length === 0 && timer === 0) {
+  handleGameStart();
+}
+```
+
+- Dodano warunek `&& timer === 0`
+- Zapobiega wielokrotnemu uruchomieniu timera
+- Gra rozpoczyna się tylko gdy wszystkie warunki spełnione
+
+### 6. Zatrzymanie timera w `gameWonDetected`
+```typescript
+const gameWonDetected = () => {
+  stopTimer();
+  console.log("GRA WYGRANA!");
+  alert("Gratulacje! Wygrałaś/eś grę! w czasie: " + timer.toFixed(1) + " sekund.");
+}
+```
+
+- `stopTimer()` – zatrzymuje licznik po wygraniu
+- `timer.toFixed(1)` – formatuje czas do 1 miejsca po przecinku
+- Alert pokazuje końcowy czas gry
+
+### 7. Reset timera w `resetGame`
+```typescript
+const resetGame = () => {
+  setPairCards([]);
+  setFlippedCards([]);
+  stopTimer();          // zatrzymanie licznika
+  setTimer(0);          // zerowanie czasu
+  setTimeout(() => {
+    setNewGameFlag(false);
+    setDisabled(false);
+    setIsGameChangePossible(true);
+  }, CARD_FLIP_DURATION)
+}
+```
+
+- `stopTimer()` – zatrzymuje działający timer
+- `setTimer(0)` – resetuje czas do 0
+- Przygotowuje stan do nowej gry
+
+### 8. Hook `useEffect` do debugowania (tymczasowy)
 ```typescript
 useEffect(() => {
-  if (newGameFlag) {
-    resetGame();
-  }
-}, [newGameFlag]);
+  console.log("minęło " + timer.toFixed(1) + " sekund");
+}, [timer]);
 ```
 
-- Reaguje na zmianę `newGameFlag`
-- Gdy `true` → wywołuje `resetGame()`
-- Rozpoczyna proces czyszczenia stanu gry
-
-### 7. Funkcja `resetGame` w `Board.tsx`
-
-**Natychmiastowe akcje:**
-- `setPairCards([])` – czyści znalezione pary
-- `setFlippedCards([])` – czyści odwrócone karty
-- Karty odwracają się z powrotem (animacja trwa `CARD_FLIP_DURATION`)
-
-**Opóźnione akcje (po animacji):**
-```typescript
-setTimeout(() => {
-  setNewGameFlag(false);
-  setDisabled(false);
-  setIsGameChangePossible(true);
-}, CARD_FLIP_DURATION)
-```
-- Czeka `400ms` na zakończenie animacji
-- `setNewGameFlag(false)` → sygnalizuje zakończenie resetu (uruchamia tasowanie w `App`)
-- `setDisabled(false)` → odblokowuje klikanie w karty
-- `setIsGameChangePossible(true)` → odblokowuje select poziomów
-
-### 8. Zastąpienie liczby stałą
-
-- `setTimeout(..., 750)` → `setTimeout(..., CARD_FLIP_DURATION)`
-- Import stałej: `import { CARD_FLIP_DURATION } from "../assets/constants"`
-- Spójność czasów animacji w całej aplikacji
-
-### 9. Aktualizacja CSS
-
-**`index.css`:**
-- Dodano zmienną CSS: `--card-flip-duration: 400ms`
-
-**`Card.css`:**
-- `transition: transform 0.4s` → `transition: transform var(--card-flip-duration)`
-- Synchronizacja czasu animacji CSS z logiką Typescript
-
+- Wyświetla aktualny czas w konsoli deweloperskiej
+- Gdy zostanie zmieniony state: `[timer]` - useEffect się wykonuje
+- Przydatne do testowania, zostanie usunięte w przyszłości kiedy zostanie stworzony element wyświetlający statystyki
 
 ---
 
 ## Kluczowe koncepcje
 
-- **Magic numbers** → **Named constants** – zamiana surowych wartości na nazwane stałe
-- **Flag pattern** – użycie boolean flag do sygnalizacji zdarzeń
-- **Sekwencyjne efekty** – chain reakcji: przycisk → reset → tasowanie
-- **setTimeout** – synchronizacja z animacjami CSS
-- **CSS variables** – centralne zarządzanie wartościami stylów
-- **Side effects coordination** – koordynacja wielu `useEffect` między komponentami
+- **setInterval** – wykonywanie funkcji w regularnych odstępach czasu
+- **clearInterval** – zatrzymywanie interwału
+- **Functional updates** – `prevTimer => prevTimer + 0.1` zapewnia poprawność przy asynchronicznych aktualizacjach
+- **Timer ID management** – przechowywanie ID do późniejszego zatrzymania
+- **Precision timing** – interwał 100ms dla precyzji 0.1s
+- **toFixed()** – formatowanie liczb zmiennoprzecinkowych
 
 ---
 
-## Przepływ resetowania gry
+## Przepływ timera
 
-1. Użytkownik klika "Nowa Gra"
-2. `setNewGameFlag(true)` w `App`
-3. `useEffect` w `Board` wykrywa zmianę
-4. `resetGame()` czyści stan (`pairCards`, `flippedCards`)
-5. Karty odwracają się (animacja 400ms)
-6. Po animacji: `setNewGameFlag(false)`, odblokowuje planszę i select
-7. `useEffect` w `App` wykrywa `newGameFlag === false`
-8. `setCards(getBoard(level))` – nowe przetasowane karty
-9. Gra gotowa do rozpoczęcia od nowa
-
----
-
-## Dlaczego taka sekwencja?
-
-- **Najpierw schowanie kart** – wizualny feedback dla użytkownika
-- **Potem tasowanie** – uniknięcie "zabłyśnięcia" nowych wartości przed animacją
-- **Opóźnienie odblokowania** – zapobiega klikaniu podczas animacji
-- **Synchronizacja czasów** – stała `CARD_FLIP_DURATION` zapewnia spójność
+1. Użytkownik klika pierwszą kartę
+2. `handleCardClick` wykrywa start gry (`timer === 0`)
+3. `handleGameStart()` → `setTimer(0)` → `startTimer()`
+4. `setInterval` uruchamia się co 100ms
+5. `setTimer(prevTimer => prevTimer + 0.1)` zwiększa czas
+6. Timer działa aż do:
+   - **Wygrana:** `gameWonDetected()` → `stopTimer()`
+   - **Reset:** `resetGame()` → `stopTimer()` + `setTimer(0)`
+7. Po zatrzymaniu: `clearInterval(timerID)` + `setTimerID(undefined)`
 
 ---
 
-## Struktura projektu po tym commicie
+## Dlaczego functional update?
+```typescript
+// ❌ Źle - może tracić aktualizacje
+setTimer(timer + 0.1);
+
+// ✅ Dobrze - zawsze dokładne
+setTimer(prevTimer => prevTimer + 0.1);
 ```
-src/
-├── assets/
-│   ├── boards.ts
-│   └── constants.ts       # Stałe globalne
-├── components/
-│   ├── Board.tsx          # Logika resetu
-│   └── Card.tsx
-└── App.tsx                # Przycisk i tasowanie
+
+- React może batchować (grupować) aktualizacje stanu
+- Functional update gwarantuje dostęp do najnowszej wartości
+- Szczególnie ważne w szybko powtarzających się aktualizacjach (setInterval)
+
+---
+
+## Bezpieczeństwo
+
+- **Zabezpieczenie przed duplikatami:** `if (timerID) return` w `startTimer`
+- **Sprawdzanie przed czyszczeniem:** `if (timerID)` w `stopTimer`
+- **Warunek startowy:** `timer === 0` zapobiega wielokrotnemu startowi timera
+- **Cleanup:** zawsze `clearInterval` przed `setTimerID(undefined)`
+
+---
+
+## Struktura stanu timera
+```typescript
+// Timer zatrzymany
+timer: 0
+timerID: undefined
+
+// Timer działa
+timer: 15.3
+timerID: 42 (przykładowe ID)
+
+// Timer po zatrzymaniu
+timer: 15.3 (ostatnia wartość)
+timerID: undefined
 ```
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Dodanie licznika czasu gry`
+**Commit:** `Dodanie komponentu GameStats z wyświetlaniem statystyk`

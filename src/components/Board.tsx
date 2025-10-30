@@ -21,9 +21,17 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
     const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
     const [flippedCards, setFlippedCards] = useState<FlippedCard[]>([]);
     const [disabled, setDisabled] = useState(false);
+    // stan przechowujący czas gry
+    const [timer, setTimer] = useState<number>(0);
+    // stan przechowujący informację czy licznik czasu jest aktywny
+    const [timerID, setTimerID] = useState<number | undefined>(undefined);
 
     const handleGameStart = () => {
         setIsGameChangePossible(false);
+        // resetowanie licznika czasu gry przed rozpoczęciem nowej gry
+        setTimer(0);
+        // uruchomienie licznika czasu gry
+        startTimer();
     }
 
     const handleCardClick = (index: number, value: string) => {
@@ -34,7 +42,7 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
         }
 
         // DETEKCJA ROZPOCZĘCIA GRY
-        if (flippedCards.length === 0 && pairCards.length === 0) {
+        if (flippedCards.length === 0 && pairCards.length === 0 && timer === 0) {
             handleGameStart();
         }
 
@@ -61,8 +69,10 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
     };
 
     const gameWonDetected = () => {
+        // ZATRZYMANIE LICZNIKA CZASU GRY PO WYGRANIU
+        stopTimer();
         console.log("GRA WYGRANA!");
-        alert("Gratulacje! Wygrałaś/eś grę!");
+        alert("Gratulacje! Wygrałaś/eś grę! w czasie: " + timer.toFixed(1) + " sekund.");
     }
 
     useEffect(() => {
@@ -76,7 +86,11 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
         // zakrycie kart
         setPairCards([]);
         setFlippedCards([]);
-        // odblokowanie możliwości klikania w karty i zmiany poziomu gry po czasie trwania animacji odwracania kart ustawionym w CARD_FLIP_DURATION (constants.ts)
+        // stopowanie licznika czasu gry
+        stopTimer();
+        // zerowanie licznika czasu gry
+        setTimer(0);
+        // odblokowanie możliwości klikania w karty
         setTimeout(() => {
             setNewGameFlag(false);
             setDisabled(false);
@@ -91,6 +105,28 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
             resetGame();
         }
     }, [newGameFlag]);
+
+
+    const startTimer = () => {
+        if (timerID) return; // jeśli licznik już działa, nie rób nic
+        setTimerID(setInterval(() => {
+            setTimer(prevTimer => {
+                return prevTimer + 0.1;
+            });
+        }, 100));
+    }
+
+    const stopTimer = () => {
+        if (timerID) {
+            clearInterval(timerID);
+            setTimerID(undefined);
+        }
+    }
+
+    // DO TESTÓW: wyświetlanie czasu w konsoli
+    useEffect(() => {
+        console.log("minęło " + timer.toFixed(1) + " sekund");
+    }, [timer]);
 
     return (
         <div className={`board ${level}`}>
