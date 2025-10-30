@@ -1,11 +1,14 @@
 import Card from "./Card";
 import './../styles/Board.css'
 import { useEffect, useState } from "react";
+import { CARD_FLIP_DURATION } from "../assets/constants";
 
 interface BoardProps {
     cards: string[];
     level: "easy" | "medium" | "hard";
     setIsGameChangePossible: (value: boolean) => void;
+    newGameFlag: boolean;
+    setNewGameFlag: (value: boolean) => void;
 }
 
 interface FlippedCard {
@@ -13,7 +16,7 @@ interface FlippedCard {
     value: string;
 }
 
-function Board({ cards, level, setIsGameChangePossible }: BoardProps) {
+function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameFlag }: BoardProps) {
 
     const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
     const [flippedCards, setFlippedCards] = useState<FlippedCard[]>([]);
@@ -51,7 +54,7 @@ function Board({ cards, level, setIsGameChangePossible }: BoardProps) {
                 setTimeout(() => {
                     setFlippedCards([]);
                     setDisabled(false);
-                }, 400);
+                }, CARD_FLIP_DURATION);
             }
         }
 
@@ -68,6 +71,26 @@ function Board({ cards, level, setIsGameChangePossible }: BoardProps) {
             gameWonDetected();
         }
     }, [pairCards]);
+
+    const resetGame = () => {
+        // zakrycie kart
+        setPairCards([]);
+        setFlippedCards([]);
+        // odblokowanie możliwości klikania w karty i zmiany poziomu gry po czasie trwania animacji odwracania kart ustawionym w CARD_FLIP_DURATION (constants.ts)
+        setTimeout(() => {
+            setNewGameFlag(false);
+            setDisabled(false);
+            setIsGameChangePossible(true);
+        }, CARD_FLIP_DURATION)
+    }
+
+    // wykonaj reset gry po ustawieniu flagi newGameFlag na true
+    useEffect(() => {
+        // RESET GRY
+        if (newGameFlag) {
+            resetGame();
+        }
+    }, [newGameFlag]);
 
     return (
         <div className={`board ${level}`}>
