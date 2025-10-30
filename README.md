@@ -1,82 +1,157 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Wykrywanie końca gry`
+**Commit:** `Dodanie przycisku resetowania i stałej czasu animacji`
 
-W tym etapie implementujemy mechanizm wykrywania momentu, gdy wszystkie pary kart zostały odkryte. Po zakończeniu gry odblokowujemy możliwość zmiany poziomu.
+W tym etapie implementujemy przycisk "Nowa Gra" umożliwiający restart rozgrywki oraz tworzymy stałą globalną dla czasu animacji odwracania kart.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Import hooka `useEffect` w `Board.tsx`
+### 1. Utworzenie pliku `constants.ts`
 
-- Dodano import `useEffect` z React
-- Umożliwia reagowanie na zmiany stanu gry
+- Nowy plik: `src/assets/constants.ts`
+- Eksport stałej: `CARD_FLIP_DURATION = 750` (ms)
+- Centralizacja wartości używanych w wielu miejscach
+- Ułatwia późniejsze zmiany – jedna wartość kontroluje wszystkie animacje
 
-### 2. Funkcja `gameEndDetected`
+### 2. Nowy stan `newGameFlag` w `App.tsx`
 
-- Wywoływana po odkryciu wszystkich par
-- `console.log("Gra zakończona")` – informacja w konsoli (F12)
-- `setIsGameChangePossible(true)` – odblokowuje select z poziomami trudności
-  - pojawia się nam problem ze zmianą poziomu z odkrytmi już kartami - zaimplementujemy w kolejnym commicie
+- `useState(false)` – flaga sygnalizująca żądanie nowej gry
+- `true` → użytkownik kliknął przycisk "Nowa Gra"
+- `false` → stan normalny, gra trwa lub zakończona
+- Przekazywana do `Board` jako props
 
-### 3. Hook `useEffect` do wykrywania końca gry
-
-**Warunek zakończenia gry:**
+### 3. Przycisk "Nowa Gra" w `App.tsx`
 ```typescript
-if (pairCards.length === cards.length && cards.length > 0)
+<div className='newGame'>
+  <button onClick={() => { setNewGameFlag(true) }}>Nowa Gra</button>
+</div>
 ```
 
-**Logika warunku:**
-- `pairCards.length === cards.length` – liczba odkrytych kart równa liczbie wszystkich kart
-- `cards.length > 0` – dodatkowe zabezpieczenie przed pustą planszą
-- Oba warunki muszą być spełnione (`&&`)
+- Kliknięcie ustawia `newGameFlag` na `true`
+- Uruchamia proces resetowania gry w `Board`
 
-**Wywołanie funkcji:**
-- Gdy warunek spełniony → `gameEndDetected()` wykonuje akcje końcowe
+### 4. Hook `useEffect` do tasowania w `App.tsx`
+```typescript
+useEffect(() => {
+  if (!newGameFlag) {
+    setCards(getBoard(level));
+  }
+}, [newGameFlag]);
+```
 
-**Dependency array:**
-- `[pairCards]` – effect uruchamia się tylko przy zmianie tablicy znalezionych par
-- Nie reaguje na niepotrzebne zmiany innych stanów
+**Logika:**
+- Uruchamia się gdy `newGameFlag` zmienia wartość
+- `if (!newGameFlag)` → tasuje karty dopiero gdy flaga wraca do `false`
+- Zapobiega tasowaniu podczas resetowania w `Board`
+- Sekwencja: reset w Board → zmiana flagi → tasowanie kart
+
+
+### 5. Aktualizacja interfejsu `BoardProps`
+
+Nowe propsy:
+- `newGameFlag: boolean` – flaga nowej gry
+- `setNewGameFlag: (value: boolean) => void` – funkcja zmiany flagi
+
+### 6. Hook `useEffect` do wykrywania resetu w `Board.tsx`
+```typescript
+useEffect(() => {
+  if (newGameFlag) {
+    resetGame();
+  }
+}, [newGameFlag]);
+```
+
+- Reaguje na zmianę `newGameFlag`
+- Gdy `true` → wywołuje `resetGame()`
+- Rozpoczyna proces czyszczenia stanu gry
+
+### 7. Funkcja `resetGame` w `Board.tsx`
+
+**Natychmiastowe akcje:**
+- `setPairCards([])` – czyści znalezione pary
+- `setFlippedCards([])` – czyści odwrócone karty
+- Karty odwracają się z powrotem (animacja trwa `CARD_FLIP_DURATION`)
+
+**Opóźnione akcje (po animacji):**
+```typescript
+setTimeout(() => {
+  setNewGameFlag(false);
+  setDisabled(false);
+  setIsGameChangePossible(true);
+}, CARD_FLIP_DURATION)
+```
+- Czeka `400ms` na zakończenie animacji
+- `setNewGameFlag(false)` → sygnalizuje zakończenie resetu (uruchamia tasowanie w `App`)
+- `setDisabled(false)` → odblokowuje klikanie w karty
+- `setIsGameChangePossible(true)` → odblokowuje select poziomów
+
+### 8. Zastąpienie liczby stałą
+
+- `setTimeout(..., 750)` → `setTimeout(..., CARD_FLIP_DURATION)`
+- Import stałej: `import { CARD_FLIP_DURATION } from "../assets/constants"`
+- Spójność czasów animacji w całej aplikacji
+
+### 9. Aktualizacja CSS
+
+**`index.css`:**
+- Dodano zmienną CSS: `--card-flip-duration: 400ms`
+
+**`Card.css`:**
+- `transition: transform 0.4s` → `transition: transform var(--card-flip-duration)`
+- Synchronizacja czasu animacji CSS z logiką Typescript
+
 
 ---
 
 ## Kluczowe koncepcje
 
-- **Dependency array** – kontrola momentu uruchomienia effectu
-- **Porównanie długości tablic** – sprawdzanie postępu gry
-- **Zabezpieczenia warunkowe** – `cards.length > 0` chroni przed błędami
+- **Magic numbers** → **Named constants** – zamiana surowych wartości na nazwane stałe
+- **Flag pattern** – użycie boolean flag do sygnalizacji zdarzeń
+- **Sekwencyjne efekty** – chain reakcji: przycisk → reset → tasowanie
+- **setTimeout** – synchronizacja z animacjami CSS
+- **CSS variables** – centralne zarządzanie wartościami stylów
+- **Side effects coordination** – koordynacja wielu `useEffect` między komponentami
 
 ---
 
-## Przepływ zakończenia gry
+## Przepływ resetowania gry
 
-1. Użytkownik znajduje ostatnią parę kart
-2. Karty dodawane są do `pairCards`
-3. `useEffect` wykrywa zmianę w `pairCards`
-4. Sprawdzenie warunku: `pairCards.length === cards.length`
-5. Warunek spełniony → `gameEndDetected()` jest wywoływana
-6. Komunikat w konsoli: "Gra zakończona"
-7. `setIsGameChangePossible(true)` odblokowuje select poziomów
-8. Użytkownik może wybrać nowy poziom i zagrać ponownie
-
----
-
-## Dlaczego `cards.length > 0`?
-
-- Zabezpieczenie przed sytuacją, gdy obie tablice są puste (0 === 0)
-- W momencie inicjalizacji komponentu mogłoby to błędnie wykryć koniec gry
-- Zapewnia, że gra rzeczywiście została rozegrana
+1. Użytkownik klika "Nowa Gra"
+2. `setNewGameFlag(true)` w `App`
+3. `useEffect` w `Board` wykrywa zmianę
+4. `resetGame()` czyści stan (`pairCards`, `flippedCards`)
+5. Karty odwracają się (animacja 400ms)
+6. Po animacji: `setNewGameFlag(false)`, odblokowuje planszę i select
+7. `useEffect` w `App` wykrywa `newGameFlag === false`
+8. `setCards(getBoard(level))` – nowe przetasowane karty
+9. Gra gotowa do rozpoczęcia od nowa
 
 ---
 
-## Optymalizacja
+## Dlaczego taka sekwencja?
 
-- Effect reaguje tylko na `pairCards`, ignorując zmiany w `flippedCards` czy `disabled`
-- Minimalizuje niepotrzebne sprawdzenia warunku
-- Poprawa wydajności aplikacji
+- **Najpierw schowanie kart** – wizualny feedback dla użytkownika
+- **Potem tasowanie** – uniknięcie "zabłyśnięcia" nowych wartości przed animacją
+- **Opóźnienie odblokowania** – zapobiega klikaniu podczas animacji
+- **Synchronizacja czasów** – stała `CARD_FLIP_DURATION` zapewnia spójność
+
+---
+
+## Struktura projektu po tym commicie
+```
+src/
+├── assets/
+│   ├── boards.ts
+│   └── constants.ts       # Stałe globalne
+├── components/
+│   ├── Board.tsx          # Logika resetu
+│   └── Card.tsx
+└── App.tsx                # Przycisk i tasowanie
+```
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Dodanie przycisku resetowania gry`
+**Commit:** `Dodanie licznika czasu gry`
