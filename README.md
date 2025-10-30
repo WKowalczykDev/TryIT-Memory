@@ -1,193 +1,160 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Dodanie licznika czasu gry`
+**Commit:** `Dodanie komponentu GameStats z wyświetlaniem statystyk`
 
-W tym etapie implementujemy licznik czasu mierzący czas rozgrywki. Timer startuje wraz z pierwszym kliknięciem karty i zatrzymuje się po wygraniu gry.
+W tym etapie tworzymy komponent `GameStats` wyświetlający statystyki gry: czas, liczbę znalezionych par oraz status gry.
 
 ---
 
 ## Zmiany wprowadzone w tym commicie
 
-### 1. Nowe stany w `Board.tsx`
+### 1. Utworzenie komponentu `GameStats.tsx`
 
-**`timer`:**
-- `useState<number>(0)` – przechowuje czas gry w sekundach
-
-**`timerID`:**
-- `useState<number | undefined>(undefined)` – przechowuje ID interwału
-- `number` → gdy timer działa (ID zwrócone przez `setInterval`)
-- `undefined` → gdy timer jest zatrzymany
-- Potrzebne do późniejszego zatrzymania licznika
-
-### 2. Funkcja `startTimer`
+**Interfejs `GameStatsProps`:**
 ```typescript
-const startTimer = () => {
-  if (timerID) return;
-  setTimerID(setInterval(() => {
-    setTimer(prevTimer => {
-      return prevTimer + 0.1;
-    });
-  }, 100));
+interface GameStatsProps {
+  timer: number;
+  pairsFound: number;
+  totalPairs: number;
+  gameState: boolean | undefined;
 }
 ```
 
-**Logika:**
-- `if (timerID) return` – nie uruchamia nowego timera jeśli już działa - dodatkowe zabezpieczenie
-- `setInterval(..., 100)` – wykonuje funkcję co 100ms (0.1 sekundy)
-- `prevTimer => prevTimer + 0.1` – zwiększa czas o 0.1s przy każdym wywołaniu
-  - Użycie **functional update** (`prevTimer`) – zapewnia dokładność przy asynchronicznych aktualizacjach
-  - Używamy tego zamiast wywołania `setTimer(timer + 0.1)`
-  - Użycie struktury z prevTimer daje nam **pewność**, że poprawnie zmienimy wartość timera
-- `setTimerID(...)` – zapisuje ID interwału do stanu
+**Struktura komponentu:**
+- `timer` – aktualny czas gry w sekundach
+- `pairsFound` – liczba odkrytych par
+- `totalPairs` – całkowita liczba par w grze
+- `gameState` – status gry:
+  - `undefined` – gra nie rozpoczęta
+  - `true` – gra w toku
+  - `false` – gra zakończona
 
-### 3. Funkcja `stopTimer`
+**Renderowanie:**
+- Wyświetla czas z jednym miejscem po przecinku
+- Pokazuje stosunek znalezionych par do wszystkich
+- Warunkowo wyświetla status gry
+
+### 2. Nowy stan `gameState` w `Board.tsx`
 ```typescript
-const stopTimer = () => {
-  if (timerID) {
-    clearInterval(timerID);
-    setTimerID(undefined);
-  }
-}
+const [gameState, setGameState] = useState<boolean | undefined>(undefined);
 ```
 
-**Logika:**
-- `if (timerID)` – sprawdza czy timer działa
-- `clearInterval(timerID)` – zatrzymuje interwał
-- `setTimerID(undefined)` – czyści stan (oznacza timer jako nieaktywny)
+**Możliwe wartości:**
+- `undefined` – stan początkowy (brak gry)
+- `true` – gra aktywna
+- `false` – gra zakończona (wygrana)
 
-### 4. Integracja z `handleGameStart`
+### 3. Zarządzanie stanem gry
+
+**W `handleGameStart`:**
 ```typescript
-const handleGameStart = () => {
-  setIsGameChangePossible(false);
-  setTimer(0);          // resetowanie licznika
-  startTimer();         // uruchomienie timera
-}
+setGameState(true);
+```
+- Ustawia status na "gra w toku" przy pierwszym kliknięciu
+
+**W `gameWonDetected`:**
+```typescript
+setGameState(false);
+```
+- Ustawia status na "gra zakończona" po odkryciu wszystkich par
+
+**W `resetGame`:**
+```typescript
+setGameState(undefined);
+```
+- Resetuje status do stanu początkowego
+
+### 4. Nowa struktura layoutu w `Board.tsx`
+```typescript
+return (
+  <div className="game-container">
+    <GameStats timer={timer} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} gameState={gameState} />
+    <div className={`board ${level}`}>
+      {/* karty */}
+    </div>
+    <div className="game-scores"></div>
+  </div>
+);
 ```
 
-- `setTimer(0)` – zeruje czas przed startem (bezpieczeństwo)
-- `startTimer()` – rozpoczyna odliczanie
+**Elementy:**
+- `.game-container` – główny kontener wszystkich elementów gry
+- `<GameStats />` – panel ze statystykami (góra)
+- `.board` – plansza z kartami (środek)
+- `.game-scores` – placeholder na przyszłą tabelę wyników (dół)
 
-### 5. Aktualizacja warunku startowego
-```typescript
-if (flippedCards.length === 0 && pairCards.length === 0 && timer === 0) {
-  handleGameStart();
-}
-```
+### 5. Przekazywanie propsów do `GameStats`
 
-- Dodano warunek `&& timer === 0`
-- Zapobiega wielokrotnemu uruchomieniu timera
-- Gra rozpoczyna się tylko gdy wszystkie warunki spełnione
+**`timer={timer}`:**
+- Aktualny czas gry
 
-### 6. Zatrzymanie timera w `gameWonDetected`
-```typescript
-const gameWonDetected = () => {
-  stopTimer();
-  console.log("GRA WYGRANA!");
-  alert("Gratulacje! Wygrałaś/eś grę! w czasie: " + timer.toFixed(1) + " sekund.");
-}
-```
+**`pairsFound={pairCards.length / 2}`:**
+- Dzielenie przez 2, bo `pairCards` zawiera pojedyncze karty (każda para = 2 karty)
 
-- `stopTimer()` – zatrzymuje licznik po wygraniu
-- `timer.toFixed(1)` – formatuje czas do 1 miejsca po przecinku
-- Alert pokazuje końcowy czas gry
+**`totalPairs={cards.length / 2}`:**
+- Całkowita liczba par na planszy
 
-### 7. Reset timera w `resetGame`
-```typescript
-const resetGame = () => {
-  setPairCards([]);
-  setFlippedCards([]);
-  stopTimer();          // zatrzymanie licznika
-  setTimer(0);          // zerowanie czasu
-  setTimeout(() => {
-    setNewGameFlag(false);
-    setDisabled(false);
-    setIsGameChangePossible(true);
-  }, CARD_FLIP_DURATION)
-}
-```
-
-- `stopTimer()` – zatrzymuje działający timer
-- `setTimer(0)` – resetuje czas do 0
-- Przygotowuje stan do nowej gry
-
-### 8. Hook `useEffect` do debugowania (tymczasowy)
-```typescript
-useEffect(() => {
-  console.log("minęło " + timer.toFixed(1) + " sekund");
-}, [timer]);
-```
-
-- Wyświetla aktualny czas w konsoli deweloperskiej
-- Gdy zostanie zmieniony state: `[timer]` - useEffect się wykonuje
-- Przydatne do testowania, zostanie usunięte w przyszłości kiedy zostanie stworzony element wyświetlający statystyki
+**`gameState={gameState}`:**
+- Aktualny status gry
 
 ---
 
 ## Kluczowe koncepcje
 
-- **setInterval** – wykonywanie funkcji w regularnych odstępach czasu
-- **clearInterval** – zatrzymywanie interwału
-- **Functional updates** – `prevTimer => prevTimer + 0.1` zapewnia poprawność przy asynchronicznych aktualizacjach
-- **Timer ID management** – przechowywanie ID do późniejszego zatrzymania
-- **Precision timing** – interwał 100ms dla precyzji 0.1s
-- **toFixed()** – formatowanie liczb zmiennoprzecinkowych
+- **Presentation component** – `GameStats` jako komponent wyłącznie prezentacyjny
+- **Props interface** – TypeScript definiuje strukturę danych
+- **Computed values** – `pairCards.length / 2` obliczane przy renderowaniu
+- **Conditional rendering** – wyświetlanie statusu w zależności od `gameState`
+- **Layout containers** – separacja struktury (game-container) od zawartości (board)
+- **Union types** – `boolean | undefined` dla trzech stanów
 
 ---
 
-## Przepływ timera
-
-1. Użytkownik klika pierwszą kartę
-2. `handleCardClick` wykrywa start gry (`timer === 0`)
-3. `handleGameStart()` → `setTimer(0)` → `startTimer()`
-4. `setInterval` uruchamia się co 100ms
-5. `setTimer(prevTimer => prevTimer + 0.1)` zwiększa czas
-6. Timer działa aż do:
-   - **Wygrana:** `gameWonDetected()` → `stopTimer()`
-   - **Reset:** `resetGame()` → `stopTimer()` + `setTimer(0)`
-7. Po zatrzymaniu: `clearInterval(timerID)` + `setTimerID(undefined)`
-
----
-
-## Dlaczego functional update?
-```typescript
-// ❌ Źle - może tracić aktualizacje
-setTimer(timer + 0.1);
-
-// ✅ Dobrze - zawsze dokładne
-setTimer(prevTimer => prevTimer + 0.1);
+## Przepływ stanu gry
+```
+undefined (początek)
+    ↓ pierwsze kliknięcie
+true (gra trwa)
+    ↓ wszystkie pary odkryte
+false (gra zakończona)
+    ↓ reset
+undefined (gotowe do nowej gry)
 ```
 
-- React może batchować (grupować) aktualizacje stanu
-- Functional update gwarantuje dostęp do najnowszej wartości
-- Szczególnie ważne w szybko powtarzających się aktualizacjach (setInterval)
-
 ---
 
-## Bezpieczeństwo
-
-- **Zabezpieczenie przed duplikatami:** `if (timerID) return` w `startTimer`
-- **Sprawdzanie przed czyszczeniem:** `if (timerID)` w `stopTimer`
-- **Warunek startowy:** `timer === 0` zapobiega wielokrotnemu startowi timera
-- **Cleanup:** zawsze `clearInterval` przed `setTimerID(undefined)`
-
----
-
-## Struktura stanu timera
+## Struktura komponentu GameStats
 ```typescript
-// Timer zatrzymany
-timer: 0
-timerID: undefined
-
-// Timer działa
-timer: 15.3
-timerID: 42 (przykładowe ID)
-
-// Timer po zatrzymaniu
-timer: 15.3 (ostatnia wartość)
-timerID: undefined
+<div className="game-stats">
+  <div>Czas: {timer.toFixed(1)}s</div>
+  <div>Pary: {pairsFound} / {totalPairs}</div>
+  {gameState === true && <div>Gra w toku...</div>}
+  {gameState === false && <div>Gra zakończona!</div>}
+  {gameState === undefined && <div>Kliknij kartę aby rozpocząć</div>}
+</div>
 ```
+
+---
+
+## Nowa hierarchia komponentów
+```
+App
+└── Board
+    ├── GameStats (statystyki)
+    ├── board (karty)
+    │   └── Card × N
+    └── game-scores (placeholder)
+```
+
+---
+
+## Przyszłe zastosowania
+
+- `.game-scores` – przygotowane miejsce na tabelę najlepszych wyników
+- `gameState` – może kontrolować wyświetlanie różnych komunikatów/animacji
+- `GameStats` – łatwo rozszerzyć o nowe metryki (ruchy, combo, punkty)
 
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Dodanie komponentu GameStats z wyświetlaniem statystyk`
+**Commit:** `Dodanie licznika ruchów`
