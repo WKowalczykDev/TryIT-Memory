@@ -22,13 +22,15 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
     const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
     const [flippedCards, setFlippedCards] = useState<FlippedCard[]>([]);
     const [disabled, setDisabled] = useState(false);
+    const [gameState, setGameState] = useState<boolean | undefined>(undefined);
     const [timer, setTimer] = useState<number>(0);
     const [timerID, setTimerID] = useState<number | undefined>(undefined);
-    const [gameState, setGameState] = useState<boolean | undefined>(undefined);
+    const [steps, setSteps] = useState<number>(0);
 
     const handleGameStart = () => {
         setIsGameChangePossible(false);
         setTimer(0);
+        setSteps(0);
         setGameState(true);
         startTimer();
     }
@@ -48,6 +50,7 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
         // ROZGRYWKA - ODWRACANIE KART
         const newFlippedCards = [...flippedCards, { index, value }];
         setFlippedCards(newFlippedCards);
+        setSteps(nOSteps => nOSteps + 1);
 
 
         if (newFlippedCards.length === 2) {
@@ -85,9 +88,10 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
         // ZAKRYCIE KART
         setPairCards([]);
         setFlippedCards([]);
-        // STOPOWANIE I ZEROWANIE LICZNIKA CZASU GRY
+        // STOPOWANIE I ZEROWANIE LICZNIKA CZASU GRY I LICZNIKA RUCHÓW
         stopTimer();
         setTimer(0);
+        setSteps(0);
         // ODBLOKOWANIE MOŻLIWOŚCI KLIKANIA PO ODWRÓCENIU KART
         setTimeout(() => {
             setNewGameFlag(false);
@@ -122,7 +126,7 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
 
     return (
         <div className="game-container">
-            <GameStats timer={timer} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} gameState={gameState} />
+            <GameStats timer={timer} steps={steps} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} gameState={gameState} />
             <div className={`board ${level}`}>
                 {cards.map((card, index) => (
                     <Card

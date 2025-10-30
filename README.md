@@ -1,8 +1,8 @@
 # Kurs React - Gra Memory
 
-**Commit:** `Dodanie komponentu GameStats z wyświetlaniem statystyk`
+**Commit:** `Dodanie licznika ruchów`
 
-W tym etapie tworzymy komponent `GameStats` wyświetlający statystyki gry: czas, liczbę znalezionych par oraz status gry.
+W tym etapie dodajemy do komponentu `GameStats` element licznika ruchów.
 
 ---
 
@@ -14,6 +14,7 @@ W tym etapie tworzymy komponent `GameStats` wyświetlający statystyki gry: czas
 ```typescript
 interface GameStatsProps {
   timer: number;
+  steps: number;
   pairsFound: number;
   totalPairs: number;
   gameState: boolean | undefined;
@@ -22,6 +23,7 @@ interface GameStatsProps {
 
 **Struktura komponentu:**
 - `timer` – aktualny czas gry w sekundach
+- `steps` – licznik ruchów
 - `pairsFound` – liczba odkrytych par
 - `totalPairs` – całkowita liczba par w grze
 - `gameState` – status gry:
@@ -88,6 +90,9 @@ return (
 **`timer={timer}`:**
 - Aktualny czas gry
 
+**`steps={steps}`**
+- Licznik kroków
+
 **`pairsFound={pairCards.length / 2}`:**
 - Dzielenie przez 2, bo `pairCards` zawiera pojedyncze karty (każda para = 2 karty)
 
@@ -128,6 +133,7 @@ undefined (gotowe do nowej gry)
 <div className="game-stats">
   <div>Czas: {timer.toFixed(1)}s</div>
   <div>Pary: {pairsFound} / {totalPairs}</div>
+  <div>Kroki: </div>
   {gameState === true && <div>Gra w toku...</div>}
   {gameState === false && <div>Gra zakończona!</div>}
   {gameState === undefined && <div>Kliknij kartę aby rozpocząć</div>}
@@ -157,4 +163,4 @@ App
 ---
 
 ➡️ Kolejny etap:  
-**Commit:** `Dodanie licznika ruchów`
+**Commit:** `Obrazki <img> jako awers i rewers karty`
