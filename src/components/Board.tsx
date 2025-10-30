@@ -2,6 +2,7 @@ import Card from "./Card";
 import './../styles/Board.css'
 import { useEffect, useState } from "react";
 import { CARD_FLIP_DURATION } from "../assets/constants";
+import GameStats from "./GameStats";
 
 interface BoardProps {
     cards: string[];
@@ -21,16 +22,14 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
     const [pairCards, setPairCards] = useState<FlippedCard[]>([]);
     const [flippedCards, setFlippedCards] = useState<FlippedCard[]>([]);
     const [disabled, setDisabled] = useState(false);
-    // stan przechowujący czas gry
     const [timer, setTimer] = useState<number>(0);
-    // stan przechowujący informację czy licznik czasu jest aktywny
     const [timerID, setTimerID] = useState<number | undefined>(undefined);
+    const [gameState, setGameState] = useState<boolean | undefined>(undefined);
 
     const handleGameStart = () => {
         setIsGameChangePossible(false);
-        // resetowanie licznika czasu gry przed rozpoczęciem nowej gry
         setTimer(0);
-        // uruchomienie licznika czasu gry
+        setGameState(true);
         startTimer();
     }
 
@@ -71,8 +70,7 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
     const gameWonDetected = () => {
         // ZATRZYMANIE LICZNIKA CZASU GRY PO WYGRANIU
         stopTimer();
-        console.log("GRA WYGRANA!");
-        alert("Gratulacje! Wygrałaś/eś grę! w czasie: " + timer.toFixed(1) + " sekund.");
+        setGameState(false);
     }
 
     useEffect(() => {
@@ -83,14 +81,14 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
     }, [pairCards]);
 
     const resetGame = () => {
-        // zakrycie kart
+        setGameState(undefined);
+        // ZAKRYCIE KART
         setPairCards([]);
         setFlippedCards([]);
-        // stopowanie licznika czasu gry
+        // STOPOWANIE I ZEROWANIE LICZNIKA CZASU GRY
         stopTimer();
-        // zerowanie licznika czasu gry
         setTimer(0);
-        // odblokowanie możliwości klikania w karty
+        // ODBLOKOWANIE MOŻLIWOŚCI KLIKANIA PO ODWRÓCENIU KART
         setTimeout(() => {
             setNewGameFlag(false);
             setDisabled(false);
@@ -98,7 +96,6 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
         }, CARD_FLIP_DURATION)
     }
 
-    // wykonaj reset gry po ustawieniu flagi newGameFlag na true
     useEffect(() => {
         // RESET GRY
         if (newGameFlag) {
@@ -108,7 +105,7 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
 
 
     const startTimer = () => {
-        if (timerID) return; // jeśli licznik już działa, nie rób nic
+        if (timerID) return;
         setTimerID(setInterval(() => {
             setTimer(prevTimer => {
                 return prevTimer + 0.1;
@@ -123,22 +120,21 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
         }
     }
 
-    // DO TESTÓW: wyświetlanie czasu w konsoli
-    useEffect(() => {
-        console.log("minęło " + timer.toFixed(1) + " sekund");
-    }, [timer]);
-
     return (
-        <div className={`board ${level}`}>
-            {cards.map((card, index) => (
-                <Card
-                    key={index}
-                    value={card}
-                    flipped={(flippedCards.find((card) => card.index === index) ||
-                        pairCards.find((card) => card.index === index)) ? true : false}
-                    onClickToBoard={() => handleCardClick(index, card)}
-                />
-            ))}
+        <div className="game-container">
+            <GameStats timer={timer} pairsFound={pairCards.length / 2} totalPairs={cards.length / 2} gameState={gameState} />
+            <div className={`board ${level}`}>
+                {cards.map((card, index) => (
+                    <Card
+                        key={index}
+                        value={card}
+                        flipped={(flippedCards.find((card) => card.index === index) ||
+                            pairCards.find((card) => card.index === index)) ? true : false}
+                        onClickToBoard={() => handleCardClick(index, card)}
+                    />
+                ))}
+            </div>
+            <div className="game-scores"></div>
         </div>
     );
 }
