@@ -1,17 +1,28 @@
 .board {
   display: grid;
   justify-content: center;
-  background-color: red;
+  background: transparent;
   grid-template-columns: repeat(4, var(--card-size));
   gap: var(--gap);
+  padding: 10px;
+  padding-bottom: 20px;
 }
 
 .board.easy {
   grid-template-columns: repeat(4, var(--card-size));
 }
+
 .board.medium {
   grid-template-columns: repeat(4, var(--card-size));
 }
+
 .board.hard {
   grid-template-columns: repeat(6, var(--card-size));
+}
+
+.game-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 24px;
+  align-items: start;
 }

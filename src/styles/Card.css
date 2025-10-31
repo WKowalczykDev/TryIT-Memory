@@ -2,7 +2,7 @@
   width: var(--card-size);
   height: var(--card-size);
   cursor: pointer;
-  border: 2px dashed blue;
+  border: none;
 }
 
 .card-inner {
@@ -31,12 +31,13 @@
 }
 
 .card-front {
-  background-color: orange;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
 }
 
 .card-back {
-  background-color: greenyellow;
   transform: rotateY(180deg);
+  border: 2px solid black;
+  font-size: 48px;
 }
 
 .card-front img, .card-back img {

@@ -1,8 +1,56 @@
 #root { 
   margin: 0 auto;
+  max-width: 1200px;
   text-align: center;
+  padding-top: 10px;
 }
+
 .app {
   display: grid;
-  border: 2px solid yellow;
+  gap: var(--gap);
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.controls{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.controls label{
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: var(--gap);
+  font-weight: bold;
+}
+
+.controls select{
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--primary);
+  font-size: 14px;
+  color: var(--bg);
+}
+
+.controls select:hover {
+  background-color: var(--secondary);
+  cursor: pointer;
+}
+
+button{
+  padding: 8px 16px;
+  background-color: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--bg);
+  font-size: 14px;
+  box-shadow: var(--box-shadow);
+}
+button:hover {
+  background-color: var(--secondary);
 }

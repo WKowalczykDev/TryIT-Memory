@@ -1,0 +1,23 @@
+.game-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: var(--radius);
+  background: #fafafa;
+  font-family: sans-serif;
+  font-size: 14px;
+  box-shadow: var(--shadow);
+  justify-content: center;
+}
+
+.game-stats div {
+  text-align: center;
+}
+
+.game-stats p {
+  font-size: 12px;
+  color: #666;
+
+}

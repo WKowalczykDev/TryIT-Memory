@@ -1,3 +1,4 @@
+import '../styles/GameStats.css';
 
 interface GameStatsProps {
     timer: number;
@@ -12,7 +13,7 @@ function GameStats({ timer, steps, pairsFound, totalPairs, gameState }: GameStat
         <div>Czas: {timer.toFixed(1)}s</div>
         <div>Kroki: {steps}</div>
         <div>Pary: {pairsFound} / {totalPairs}</div>
-        {gameState === undefined ? <div>Rozpocznij grę!</div> : gameState ? <div>Gra w toku...</div> : <div>Gra zakończona!</div>}
+        {gameState === undefined ? <p>Rozpocznij grę!</p> : gameState ? <p>Gra w toku...</p> : <p>Gra zakończona!</p>}
     </div>);
 }
 
