@@ -3,6 +3,7 @@ import './../styles/Board.css'
 import { useEffect, useState } from "react";
 import { CARD_FLIP_DURATION } from "../assets/constants";
 import GameStats from "./GameStats";
+import GameCookies from "./GameCookies";
 
 interface BoardProps {
     cards: string[];
@@ -138,7 +139,8 @@ function Board({ cards, level, setIsGameChangePossible, newGameFlag, setNewGameF
                     />
                 ))}
             </div>
-            <div className="game-scores"></div>
+            <GameCookies gameState={gameState} timer={Number(timer.toFixed(1))} steps={steps} level={level}/>
+            
         </div>
     );
 }

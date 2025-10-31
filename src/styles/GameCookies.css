@@ -1,0 +1,44 @@
+.game-scores {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: var(--radius);
+    background: #fafafa;
+    font-family: sans-serif;
+    font-size: 14px;
+    box-shadow: var(--shadow);
+    justify-content: center;
+}
+
+.game-scores div {
+    text-align: center;
+}
+
+.game-scores p {
+    font-size: 12px;
+    color: #666;
+
+}
+
+.scores-container {
+    display: flex;
+    justify-content: center;
+}
+
+.scores-table {
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+.scores-table th,
+.scores-table td {
+    padding: 8px 12px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+button{
+    margin: 10px;
+}
