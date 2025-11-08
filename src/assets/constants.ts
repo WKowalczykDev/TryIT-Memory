@@ -1,0 +1,1 @@
+export const CARD_FLIP_DURATION = 750; // ms
