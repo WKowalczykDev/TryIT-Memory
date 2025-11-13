@@ -1,82 +1,26 @@
-# Kurs React - Gra Memory
+# Zadanie domowe 5
 
-**Commit:** `Wykrywanie końca gry`
+## Opis
+Celem zadania jest dodanie funkcjonalności **resetowania gry** w komponencie `Board.tsx`.  
+Reset ma przywracać grę do stanu początkowego - czyli zakryć wszystkie karty i ponownie umożliwić wybór poziomu oraz klikanie po zakończeniu animacji.
 
-W tym etapie implementujemy mechanizm wykrywania momentu, gdy wszystkie pary kart zostały odkryte. Po zakończeniu gry odblokowujemy możliwość zmiany poziomu.
+## Kroki do wykonania
+1. W pliku `Board.tsx` utwórz funkcję `resetGame`, która będzie:
+   - czyścić stan przechowujący aktualnie odwrócone karty
+   - czyścić stan z aktualnie znalezionymi parami 
+   - po upływie czasu takiego samego lub większego niż odwracanie karty
+     - wyłączać flagę nowej gry
+     - odblokowywać klikanie
+     - umożliwiać zmianę poziomu
 
----
+2. Dodaj `useEffect`, który będzie obserwować zmianę wartości `newGameFlag`.
+   - Gdy `newGameFlag` zmieni się na `true`, uruchom funkcję `resetGame()`.
 
-## Zmiany wprowadzone w tym commicie
+3. Pomyśl, co jeszcze warto zresetować - jeśli masz dodatkowe stany w `Board.tsx`
 
-### 1. Import hooka `useEffect` w `Board.tsx`
+4. Upewnij się, że reset działa poprawnie: po uruchomieniu nowej gry wszystkie elementy wracają do stanu początkowego.
 
-- Dodano import `useEffect` z React
-- Umożliwia reagowanie na zmiany stanu gry
-
-### 2. Funkcja `gameEndDetected`
-
-- Wywoływana po odkryciu wszystkich par
-- `console.log("Gra zakończona")` – informacja w konsoli (F12)
-- `setIsGameChangePossible(true)` – odblokowuje select z poziomami trudności
-  - pojawia się nam problem ze zmianą poziomu z odkrytmi już kartami - zaimplementujemy w kolejnym commicie
-
-### 3. Hook `useEffect` do wykrywania końca gry
-
-**Warunek zakończenia gry:**
-```typescript
-if (pairCards.length === cards.length && cards.length > 0)
-```
-
-**Logika warunku:**
-- `pairCards.length === cards.length` – liczba odkrytych kart równa liczbie wszystkich kart
-- `cards.length > 0` – dodatkowe zabezpieczenie przed pustą planszą
-- Oba warunki muszą być spełnione (`&&`)
-
-**Wywołanie funkcji:**
-- Gdy warunek spełniony → `gameEndDetected()` wykonuje akcje końcowe
-
-**Dependency array:**
-- `[pairCards]` – effect uruchamia się tylko przy zmianie tablicy znalezionych par
-- Nie reaguje na niepotrzebne zmiany innych stanów
-
----
-
-## Kluczowe koncepcje
-
-- **Dependency array** – kontrola momentu uruchomienia effectu
-- **Porównanie długości tablic** – sprawdzanie postępu gry
-- **Zabezpieczenia warunkowe** – `cards.length > 0` chroni przed błędami
-
----
-
-## Przepływ zakończenia gry
-
-1. Użytkownik znajduje ostatnią parę kart
-2. Karty dodawane są do `pairCards`
-3. `useEffect` wykrywa zmianę w `pairCards`
-4. Sprawdzenie warunku: `pairCards.length === cards.length`
-5. Warunek spełniony → `gameEndDetected()` jest wywoływana
-6. Komunikat w konsoli: "Gra zakończona"
-7. `setIsGameChangePossible(true)` odblokowuje select poziomów
-8. Użytkownik może wybrać nowy poziom i zagrać ponownie
-
----
-
-## Dlaczego `cards.length > 0`?
-
-- Zabezpieczenie przed sytuacją, gdy obie tablice są puste (0 === 0)
-- W momencie inicjalizacji komponentu mogłoby to błędnie wykryć koniec gry
-- Zapewnia, że gra rzeczywiście została rozegrana
-
----
-
-## Optymalizacja
-
-- Effect reaguje tylko na `pairCards`, ignorując zmiany w `flippedCards` czy `disabled`
-- Minimalizuje niepotrzebne sprawdzenia warunku
-- Poprawa wydajności aplikacji
-
----
-
-➡️ Kolejny etap:  
-**Commit:** `Dodanie przycisku resetowania gry`
+## Wskazówki
+- Przemyśl, które stany odpowiadają za działanie gry i co należy wyczyścić.
+- To ćwiczenie ma pomóc zrozumieć przepływ danych w React i logikę zarządzania stanem.
+- Weryfikacja działania i szczegóły implementacji zostaną omówione na kolejnej lekcji.

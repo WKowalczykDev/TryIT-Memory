@@ -6,6 +6,8 @@ interface BoardProps {
     cards: string[];
     level: "easy" | "medium" | "hard";
     setIsGameChangePossible: (value: boolean) => void;
+    newGameFlag: boolean;
+    setNewGameFlag: (value: boolean) => void;
 }
 
 interface FlippedCard {

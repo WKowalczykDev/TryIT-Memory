@@ -23,6 +23,8 @@ function App() {
   const [level, setLevel] = useState<"easy" | "medium" | "hard">('easy');
   const [isGameChangePossible, setIsGameChangePossible] = useState(true);
 
+  const [newGameFlag, setNewGameFlag] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLevel(e.target.value as "easy" | "medium" | "hard");
     setCards(getBoard(e.target.value as "easy" | "medium" | "hard"));
@@ -53,6 +55,12 @@ function App() {
 
   const [cards, setCards] = useState<string[]>(getBoard(level));
 
+  useEffect(() => {
+    // TASOWANIE KART PRZY NOWEJ GRZE, PO RESECIE POZIOMU I WYKONANIU KODU W BOARD.TSX
+    if (!newGameFlag) {
+      setCards(getBoard(level));
+    }
+  }, [newGameFlag]);
 
   return (
     <div className="app">
@@ -66,7 +74,11 @@ function App() {
           </select>
         </label>
       </div>
-      <Board cards={cards} level={level} setIsGameChangePossible={setIsGameChangePossible} />
+      <Board cards={cards} level={level} setIsGameChangePossible={setIsGameChangePossible} newGameFlag={newGameFlag} setNewGameFlag={setNewGameFlag} />
+      {/* zmiana flagi nowej gry po kliknięciu przycisku Nowa Gra */}
+      <div className='newGame'>
+        <button onClick={() => { setNewGameFlag(true) }}>Nowa Gra</button>
+      </div>
     </div>
   );
 }
