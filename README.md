@@ -1,341 +1,117 @@
-# Kurs React - Gra Memory
+### 🟡 Zadanie z gwiazdką – System zapisu wyników w cookies (leaderboard)
 
-**Commit:** Finalne poprawki stylów i UX
+**Commit:** `Implementacja systemu zapisywania wyników (Cookies)`
 
-W tym etapie usuwamy style debugujące i dodajemy profesjonalny design system oparty na gradientach, cieniach i spójnych zmiennych CSS.
-
----
-
-## Kluczowe koncepcje CSS
-
-### **CSS Grid Layout**
-```css
-grid-template-columns: 1fr 2fr 1fr;
-```
-- `fr` (fraction) – jednostka elastyczna, dzieli przestrzeń proporcjonalnie
-- `1fr 2fr 1fr` = lewa 25%, środek 50%, prawa 25%
-- Działa na każdym rozmiarze ekranu
-
-### **Linear Gradients**
-```css
-linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)
-```
-- `135deg` – kąt przekątny (z lewego górnego do prawego dolnego rogu)
-- `0%` i `100%` – punkty początkowy i końcowy przejścia kolorów
-
-### **Box Shadows (hierarchia głębi)**
-```css
-box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-```
-- Pierwszy parametr (0) – przesunięcie X
-- Drugi (20px) – przesunięcie Y (w dół)
-- Trzeci (25px) – rozmycie
-- Czwarty (-5px) – spread (ujemna wartość zmniejsza cień)
-- Ostatni – kolor z transparencją
-
-### **CSS Variables**
-```css
-var(--primary)
-var(--gap)
-```
-- Spójność wartości w całej aplikacji
-- Zmiana w jednym miejscu (:root) aktualizuje wszędzie
-- Lepsza czytelność kodu (nazwy zamiast magicznych liczb)
-
-### **Hover States**
-```css
-button:hover {
-  background-color: var(--secondary);
-}
-```
-- Pseudo-klasa `:hover` – feedback interakcji, w momencie jak najedziemy na element - wykonuje się, to co jest podane w arkuszu stylów, dla momentu :hover
-- Sygnalizuje użytkownikowi, że element jest klikalny
+W tym zadaniu tworzymy **tablicę wyników gry (leaderboard)** zapisywaną w **cookies**, aby gracze mogli porównywać swoje wyniki i nie tracić ich po odświeżeniu strony.
 
 ---
 
-## Zmiany w plikach
+### 🔧 Kluczowe elementy implementacji
 
-### **App.css**
+#### 1. Instalacja biblioteki do obsługi cookies
 
-#### #root
-```css
-#root { 
-  margin: 0 auto;
-  max-width: 1200px;
-  text-align: center;
-  padding-top: 10px;
-}
-```
-- `max-width: 1200px` – ograniczenie szerokości na dużych ekranach
-- `margin: 0 auto` – wyśrodkowanie kontenera
-
-#### .app
-```css
-.app {
-  display: grid;
-  gap: var(--gap);
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-```
-**Usunięto:** `border: 2px solid yellow` (debug)  
-**Dodano:** białe tło, duże zaokrąglenie (16px), głęboki cień
-
-#### .controls
-```css
-.controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.controls label {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  gap: var(--gap);
-  font-weight: bold;
-}
-
-.controls select {
-  padding: 8px 12px;
-  border-radius: var(--radius);
-  background: var(--primary);
-  font-size: 14px;
-  color: var(--bg);
-}
-
-.controls select:hover {
-  background-color: var(--secondary);
-  cursor: pointer;
-}
-```
-- `flex-direction: column` – elementy wewnątrz będą się wyświetlały od góry do dołu
-- `color: var(--bg)` – biały tekst na kolorowym tle
-- Hover z kolorem `--secondary` i `cursor: pointer`
-
-#### button (globalny)
-```css
-button {
-  padding: 8px 16px;
-  background-color: var(--primary);
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  color: var(--bg);
-  font-size: 14px;
-  box-shadow: var(--box-shadow);
-}
-
-button:hover {
-  background-color: var(--secondary);
-}
-```
-- `border: none` – usuwa domyślne obramowanie przeglądarki
-- Selektor elementu (nie klasy) – wszystkie przyciski dziedziczą styl
+* `npm install js-cookie`
+* `npm install -D @types/js-cookie`
+  Biblioteka `js-cookie` umożliwia łatwe odczytywanie, zapisywanie i usuwanie danych cookies w przeglądarce.
 
 ---
 
-### **index.css**
+#### 2. Nowy komponent `GameCookies.tsx`
 
-```css
-body {
-  margin: 0;
-  font-family: sans-serif;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  min-height: 100vh;
-}
-```
-- `min-height: 100vh` – gradient wypełnia całą wysokość ekranu
+* Import `Cookies` z `js-cookie`
+* Przyjmuje dane: `gameState`, `timer`, `steps`, `level`
+* Obsługuje: wczytywanie, zapisywanie i wyświetlanie wyników
 
 ---
 
-### **Board.css**
+#### 3. Wczytywanie zapisanych wyników (`useEffect`)
 
-#### .game-container (nowy)
-```css
-.game-container {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  gap: 24px;
-  align-items: start;
-}
-```
-- Trzy kolumny: statystyki | plansza | wyniki
-- `align-items: start` – wyrównanie do góry
-
-#### .board
-```css
-.board {
-  display: grid;
-  justify-content: center;
-  background: transparent;
-  grid-template-columns: repeat(4, var(--card-size));
-  gap: var(--gap);
-  padding: 10px;
-  padding-bottom: 20px;
-}
-```
-**Usunięto:** `background-color: red` (debug)  
-**Dodano:** `background: transparent` – widoczny gradient z body
-
-#### Poziomy trudności
-```css
-.board.easy {
-  grid-template-columns: repeat(4, var(--card-size));
-}
-
-.board.medium {
-  grid-template-columns: repeat(4, var(--card-size));
-}
-
-.board.hard {
-  grid-template-columns: repeat(6, var(--card-size));
-}
-```
-- Easy/Medium: 4 kolumny
-- Hard: 6 kolumn
-- `repeat(n, var(--card-size))` – powtórzenie kolumn ze zmienną
+* Po uruchomieniu komponentu odczytywane są dane z cookies (`Cookies.get("gameScores")`)
+* Wyniki filtrowane są wg poziomu (`easy`, `medium`, `hard`)
+* Sortowanie po czasie (`.sort((a, b) => a.timer - b.timer)`)
+* Wyświetlane tylko **Top 10 wyników**
 
 ---
 
-### **Card.css**
+#### 4. Detekcja zakończenia gry
 
-#### .card
-```css
-.card {
-  width: var(--card-size);
-  height: var(--card-size);
-  cursor: pointer;
-  border: none;
-}
-```
-**Usunięto:** `border: 2px dashed blue` (debug)
-
-#### .card-front (awers - zakryty)
-```css
-.card-front {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-}
-```
-- dodano gradient na tło w przypadku nie wyświetlenia się zdjęcia
-
-#### .card-back (rewers - odkryty)
-```css
-.card-back {
-  transform: rotateY(180deg);
-  border: 2px solid black;
-  font-size: 48px;
-}
-```
-**Usunięto:** `background-color: greenyellow` (teraz inline style w TS)  
-**Dodano:** czarna ramka, duża czcionka dla fallbacku tekstowego
+* Gdy `gameState === false` → pokazuje się formularz zapisu wyniku
+* Gdy `gameState === true` → formularz znika (nowa gra)
 
 ---
 
-### **GameStats.css** (nowy plik)
+#### 5. Zapisywanie nowego wyniku
 
-```css
-.game-stats {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: var(--radius);
-  background: #fafafa;
-  font-family: sans-serif;
-  font-size: 14px;
-  box-shadow: var(--shadow);
-  justify-content: center;
-  margin-top: 20px;
-}
+Funkcja `handleSaveScore()`:
 
-.game-stats div {
-  text-align: center;
-}
+* Waliduje nazwę użytkownika
+* Dodaje nowy wpis: `{ username, timer, steps, level, timestamp }`
+* Zapisuje w cookies:
 
-.game-stats p {
-  font-size: 12px;
-  color: #666;
-}
+  ```typescript
+  Cookies.set("gameScores", JSON.stringify(scores), { expires: 365 });
+  Cookies.set("lastUsername", username, { expires: 365 });
+  ```
+* Odświeża tablicę wyników
+
+---
+
+#### 6. Usuwanie wyników
+
+Funkcja `handleClearLeaderboard()`:
+
+* Potwierdzenie przez `window.confirm()`
+* Usuwa dane z cookies (`Cookies.remove("gameScores")`)
+
+---
+
+#### 7. Interfejs użytkownika
+
+Formularz i tabela są renderowane warunkowo:
+
+* Formularz z inputem i przyciskiem **Zapisz wynik**
+* Tabela wyników (`<table>`) z kolumnami: *#*, *Gracz*, *Poziom*, *Czas*, *Kroki*
+* Przycisk **Wyczyść tablicę wyników**
+
+---
+
+#### 8. Integracja w `Board.tsx`
+
+Dodano:
+
+```tsx
+<GameCookies
+  gameState={gameState}
+  timer={Number(timer.toFixed(1))}
+  steps={steps}
+  level={level}
+/>
 ```
-- `#fafafa` – bardzo jasny szary (subtelne odróżnienie od białego)
-- `#ddd` – jasny szary dla obramowania
-- `#666` – ciemnoszary dla tekstu drugorzędnego
-- `font-size: 12px` dla `<p>` – status gry mniej ważny niż liczby
 
 ---
 
-## Hierarchia wizualna
+### 🎨 Stylowanie (`GameCookies.css`)
 
-```
-Body (gradient tła)
-  └─ #root (max-width 1200px, wyśrodkowany)
-      └─ .app (biała karta z cieniem)
-          ├─ .controls (wybór poziomu)
-          ├─ .game-container (Grid 1fr 2fr 1fr)
-          │   ├─ .game-stats (lewa kolumna)
-          │   ├─ .board (środkowa 2x szersza)
-          │   └─ .game-scores (prawa kolumna)
-          └─ button (nowa gra)
-```
-
-**Poziomy cieni (depth layers):**
-1. `.app` – najgłębszy cień (aplikacja unosi się nad tłem)
-2. `button` – średni cień (przyciski nad kartą)
-3. `.game-stats` – subtelny cień (panele delikatnie oddzielone)
+* Flexbox w kolumnie (`.game-scores`)
+* Delikatne cienie i obramowania (`box-shadow`, `border-radius`)
+* Tabela z prostym stylem i wyśrodkowanym tekstem
 
 ---
 
-## Paleta kolorów
+### 💡 Najważniejsze techniki
 
-**Zmienne CSS (:root):**
-- `--primary` – główny kolor (gradienty, przyciski)
-- `--secondary` – kolor drugorzędny (hover states)
-- `--bg` – biały (tekst na kolorowym tle)
-- `--gap` – standardowy odstęp
-- `--radius` – standardowe zaokrąglenie (~8px)
-- `--card-size` – rozmiar karty
-- `--box-shadow` – cień przycisków
-- `--shadow` – cień paneli
-
-**Dodatkowe kolory:**
-- `white` – tło .app
-- `#fafafa` – tło GameStats
-- `#ddd` – obramowania
-- `#666` – tekst drugorzędny
-- `black` – obramowanie odkrytej karty
+* **Cookies** → trwałe przechowywanie danych
+* **`js-cookie`** → łatwe API do zarządzania ciasteczkami
+* **`useEffect`** → automatyczne wczytywanie danych po uruchomieniu gry
+* **Filtrowanie, sortowanie, slice()** → selekcja najlepszych wyników
+* **Warunkowe renderowanie JSX** → dynamiczne wyświetlanie formularza i tabeli
 
 ---
 
-## Podsumowanie zmian
+### 🧠 Cel zadania
 
-**Usunięto:** wszystkie debugowe obramowania i testowe kolory  
-**Dodano:** 
-- System gradientów (spójność wizualna)
-- Box shadows (3 poziomy głębi)
-- Layout Grid z elastycznymi proporcjami
-- Hover states (feedback interakcji)
-- Semantyczny HTML
-- Osobny plik CSS dla GameStats
+Utworzyć prosty system **leaderboardu** działający lokalnie w przeglądarce, dzięki któremu gracz może:
 
-**Zastosowane zasady:**
-1. Spójność – te same kolory, zaokrąglenia, cienie
-2. Hierarchia – różne poziomy cieni pokazują ważność
-3. Feedback – hover sygnalizuje interaktywność
-4. Responsywność – jednostki fr i vh zamiast pikseli
-
----
-
-### Credits
-
-Fruit graphics by [Conania](https://www.iconfinder.com/iconsets/fruit-and-vegetable-15), licensed under [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/).  
-Used in accordance with the license.
-
----
-
-➡️ Kolejny etap:  
-**Commit:** `Dodanie tablicy najlepszych wyników z cookies`
+* zapisać swoje wyniki po zakończeniu gry,
+* zobaczyć najlepsze wyniki dla danego poziomu trudności,
+* wyczyścić tablicę wyników.
